@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/aarohabrhm/CodeSync#readme",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^5.1.0"
   },
   "devDependencies": {
