@@ -1,23 +1,43 @@
-# CodeSync
-<h2>Main Project --- College of engineering kalloppara </h2>
-<h3><br>Developed by:<br></h3>
-<a href="https://github.com/aarohabrhm">Aaroh Abraham</a>
-<br>
-<a href="https://github.com/Anuxrag">Anurag M</a> 
-<br>
-<a>Jovana P Jerom</a>
-<br><a>Aleena Siby</a>
+# 🚀 CodeSync
+
+### 🎓 Main Project — College of Engineering, Kallooppara
+
+---
+
+### 👨‍💻 Developed by:
+- Aaroh Abraham — https://github.com/aarohabrhm  
+- Anurag M — https://github.com/Anuxrag  
+- Jovana P Jerom  
+- Aleena Siby  
+
+---
+
 ## 📘 About the Project
-*CodeSync* is the final year main project developed as part of the curriculum at the **College of Engineering, Kallooppara**. This project was built with collaboration, innovation, and technical depth in mind.
 
-## 🔧 Technologies Used
-- React / Express.js / Node.js
+**CodeSync** is the final year main project developed as part of the B.Tech curriculum at the **College of Engineering, Kallooppara**.  
+This project emphasizes real-time collaboration, version control integration, and a seamless developer experience — all built with modern web technologies.
 
-## 📁 Repository Structure
-- `/client` — Vite + React-based user interface
-- `/server` — Express.js API server
+---
 
-## 📌 How to Run
-1. Clone the repository
-2. Install dependencies
-3. run **npm run dev** in the root folder
+## 🔧 Tech Stack
+
+- **Frontend:** React (with Vite)  
+- **Backend:** Node.js & Express.js
+
+---
+
+## 📁 Project Structure
+
+/
+├── client   # Frontend - Vite + React  
+└── server   # Backend - Express.js API  
+
+---
+
+## 🛠️ Getting Started
+
+Follow these steps to run the project locally:
+
+1. **Clone the repository**
+2. **Install The Dependencies**
+3. **Run *npm run dev* in Root Folder**
