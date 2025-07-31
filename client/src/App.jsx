@@ -1,5 +1,8 @@
 import { useEffect,useState } from 'react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Login from './pages/login';
 import './App.css'
+import Hero from './pages/Hero';
 
 function App() {
   const [msg,setMsg] = useState('')
@@ -11,10 +14,12 @@ function App() {
     }, []);
 
   return (
-    <div>
-        <h1>Hai</h1>
-        <h2>{msg}</h2>
-    </div>
+     <Router>
+      <Routes>
+        <Route path="/" element={<Hero/>} />
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    </Router>
   )
 }
 
