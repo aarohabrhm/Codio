@@ -1,6 +1,10 @@
 import express from 'express';
 import {router} from "./route.js";
 import cors  from 'cors';
+import mongoose from 'mongoose';
+const mongoURI ='mongodb://localhost:27017/'
+mongoose.connect(mongoURI,{
+    useNewUrlParser:true,useUnifiedTopology:true}).then(()=>console.log('mongodb Connected')).catch(err=>console.error('connection error'))
 
 const app = express();
 
@@ -16,8 +20,6 @@ app.get('/',(req,res)=>{
 
 
 app.use('/',router);
-
-console.log("hai from server side");
 
 app.listen(PORT, () => {
     console.log(`http://localhost:${PORT}\n`);
