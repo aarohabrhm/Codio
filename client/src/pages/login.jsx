@@ -7,7 +7,8 @@ export default function Login() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    name: ''
+    name: '',
+    username:''
   });
 
   const handleInputChange = (e) => {
@@ -50,14 +51,28 @@ export default function Login() {
                   </div>
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
+                    name="username"
+                    value={formData.username}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-3 bg-[#1D1E22] border border-white/20 rounded-full text-white placeholder-gray-400  focus:outline-none focus:ring-1 focus:ring-[#73CCCB] focus:border-transparent transition-all duration-300"
-                    placeholder="Full Name"
+                    className="w-full pl-12 pr-4 py-3 bg-[#1D1E22] border border-white/20 rounded-full text-white placeholder-gray-400  focus:outline-none focus:ring-1 focus:ring-[#73CCCB] focus:border-transparent transition-all duration-300 mb-0"
+                    placeholder="Username"
                   />
+                  
                 </div>
               )}
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-[#73CCCB] transition-colors" />
+                </div>
+                <input
+                  type="text"
+                  name="fullname"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className="w-full pl-12 pr-4 py-3 bg-[#1D1E22] border border-white/20 rounded-full text-white placeholder-gray-400  focus:outline-none focus:ring-1 focus:ring-[#73CCCB] focus:border-transparent transition-all duration-300"
+                  placeholder="Full Name"
+                />
+              </div>
 
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
