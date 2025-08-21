@@ -6,7 +6,7 @@
 
 ### 👨‍💻 Developed by:
 - Aaroh Abraham — https://github.com/aarohabrhm  
-- Anurag M — https://github.com/Anuxrag  
+- Anurag M — https://github.com/anuurgg
 - Jovana P Jerom  
 - Aleena Siby  
 
