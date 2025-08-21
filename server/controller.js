@@ -1,3 +1,3 @@
 export const hello=(req,res)=>{
-    res.send('This is Login Page');
+    res.send('This is Login Page!!');
 }
