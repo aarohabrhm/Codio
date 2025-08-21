@@ -1,8 +1,7 @@
 import express from 'express';
 import {router} from "./route.js";
 import cors  from 'cors';
-import mongoose from 'mongoose';
-import { register,login } from './controllers/authcontroller.js';
+import mongoose from 'mongoose'
 import authRoutes from './routes/auth.js'
 const mongoURI ='mongodb://localhost:27017/'
 mongoose.connect(mongoURI,{
