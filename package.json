@@ -8,6 +8,7 @@
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "dependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "package.json": "^2.0.1"
   }
 }
