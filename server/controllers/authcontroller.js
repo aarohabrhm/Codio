@@ -4,18 +4,13 @@ import User from "../models/user.js";
 export const register = async (req, res) => {
     try {
         const { fullname, username, email, password } = req.body;
-
-        // check if user already exists
         const existingUser = await User.findOne({ $or: [{ email }, { username }] });
         if (existingUser) {
             return res.status(409).json({ message: "username or email already exists" });
         }
-
-        // generate OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes expiry
 
-        // create user with OTP
         const user = new User({
             fullname,
             username,
@@ -28,7 +23,6 @@ export const register = async (req, res) => {
 
         await user.save();
 
-        // for now just log OTP (replace with nodemailer later)
         console.log(`OTP for ${email}: ${otp}`);
 
         res.status(201).json({
@@ -40,7 +34,6 @@ export const register = async (req, res) => {
     }
 };
 
-// VERIFY OTP
 export const verifyOtp = async (req, res) => {
     try {
         const { email, otp } = req.body;
@@ -67,8 +60,6 @@ export const verifyOtp = async (req, res) => {
         res.status(500).json({ message: "server error" });
     }
 };
-
-// LOGIN (only if verified)
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
