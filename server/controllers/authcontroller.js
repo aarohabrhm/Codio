@@ -1,5 +1,5 @@
 import User from "../models/user.js"
-
+import nodemailer from "nodemailer"
 export const register = async (req, res) => {
   try {
     const { fullname, username, email, password } = req.body
