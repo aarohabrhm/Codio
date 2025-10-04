@@ -1,4 +1,4 @@
-# 🚀 CodeSync
+# 🚀 Codio
 
 ### 🎓 Main Project — College of Engineering, Kallooppara
 
