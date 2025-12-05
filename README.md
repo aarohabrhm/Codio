@@ -19,7 +19,7 @@ This project emphasizes real-time collaboration, version control integration, an
 
 ---
 
-## 🔧 Tech Stack
+## 🔧 Tech Stack:
 
 - **Frontend:** React (with Vite)  
 - **Backend:** Node.js & Express.js
