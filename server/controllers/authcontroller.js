@@ -12,6 +12,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
+
+
+export const getMe = async (req, res) => {
+    try {
+        // req.user.id comes from the middleware
+        const user = await User.findById(req.user.id).select("-password -otp"); // Exclude sensitive data
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.json(user);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
 export const register = async (req, res) => {
     try {
         const { fullname, username, email, password } = req.body;

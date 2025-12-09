@@ -1,7 +1,7 @@
-// src/pages/Dashboard.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import codioLogo from '../assets/logo.png'; // adjust path if needed
+import codioLogo from '../assets/logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import {
   Search,
   Home,
@@ -19,21 +19,8 @@ import {
   Shield,
   Bell,
   FolderGit2,
-  Minus,
 } from 'lucide-react';
 
-/*
-  Dashboard.jsx
-  - Updated: Sidebar folders section is connected to dashboard tabs.
-  - Sidebar counts are computed from the projects list and reflect actual numbers.
-  - Clicking a folder in the sidebar sets the active tab via URL query param (`?tab=...`).
-  - The "All" tab shows all projects.
-  - Keep routing, Tailwind, and your data provider integration as needed.
-*/
-
-// -----------------------------
-// Sample data (replace with your real data source)
-// -----------------------------
 const SAMPLE_PROJECTS = [
   {
     id: '1',
@@ -109,19 +96,12 @@ const SAMPLE_PROJECTS = [
   },
 ];
 
-// -----------------------------
-// Utility: simple classNames
-// -----------------------------
 const cn = (...args) => args.filter(Boolean).join(' ');
 
-// -----------------------------
-// Sidebar & Header
-// -----------------------------
 const Sidebar = ({ projects, currentTab }) => {
-  // compute counts from projects
   const counts = {
     all: projects.length,
-    recent: projects.filter((p) => p.createdAt > Date.now() - 1000 * 60 * 60 * 24 * 30).length, // 30 days recent
+    recent: projects.filter((p) => p.createdAt > Date.now() - 1000 * 60 * 60 * 24 * 30).length,
     favorites: projects.filter((p) => p.favorite).length,
     shared: projects.filter((p) => p.shared).length,
     external: projects.filter((p) => p.external).length,
@@ -134,7 +114,6 @@ const Sidebar = ({ projects, currentTab }) => {
     const params = new URLSearchParams(window.location.search);
     if (tabValue === 'all') params.set('tab', 'all');
     else params.set('tab', tabValue);
-    // navigate to same pathname (dashboard), with query param
     navigate({ pathname: window.location.pathname, search: params.toString() });
   };
 
@@ -217,12 +196,11 @@ const Sidebar = ({ projects, currentTab }) => {
   );
 };
 
-const Header = ({ searchValue, setSearchValue }) => {
+const Header = ({ searchValue, setSearchValue, user }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // sync from query param if present
     const params = new URLSearchParams(location.search);
     const q = params.get('q') || '';
     setSearchValue(q);
@@ -238,7 +216,9 @@ const Header = ({ searchValue, setSearchValue }) => {
 
   return (
     <header className="flex items-center justify-between p-8 pb-4">
-      <h1 className="text-2xl font-bold text-white">Welcome back</h1>
+      <h1 className="text-2xl font-bold text-white">
+        Welcome back, {user ? user.fullname.split(' ')[0] : 'Developer'}
+      </h1>
 
       <div className="flex items-center gap-4">
         <form onSubmit={onSubmit} className="relative">
@@ -254,11 +234,13 @@ const Header = ({ searchValue, setSearchValue }) => {
 
         <div className="flex items-center gap-3 pl-4 border-l border-neutral-800">
           <img
-            src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80"
+            src={user?.avatar || "https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80"}
             alt="Profile"
             className="w-8 h-8 rounded-full border border-neutral-700"
           />
-          <span className="text-sm font-medium text-white">Anurag</span>
+          <span className="text-sm font-medium text-white">
+            {user ? user.fullname : 'Loading...'}
+          </span>
           <Bell size={18} className="cursor-pointer hover:text-white" />
           <MoreVertical size={18} className="cursor-pointer hover:text-white" />
         </div>
@@ -267,9 +249,6 @@ const Header = ({ searchValue, setSearchValue }) => {
   );
 };
 
-// -----------------------------
-// Reusable: QuickAction, Tab, ProjectCard
-// -----------------------------
 const QuickAction = ({ icon, label, to }) => (
   <Link to={to} className="flex flex-col items-start gap-4 p-5 rounded-xl border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition cursor-pointer">
     <div className="p-2 rounded-lg border border-neutral-700 bg-neutral-800/50 text-neutral-400">{icon}</div>
@@ -315,7 +294,6 @@ const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
     try {
       await navigator.clipboard.writeText(url);
     } catch (err) {
-      // ignore
     }
   };
 
@@ -326,12 +304,11 @@ const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
       try {
         await navigator.share({ title: project.title, url });
       } catch (err) {
-        // user canceled
       }
     } else {
       try {
         await navigator.clipboard.writeText(url);
-      } catch (err) {}
+      } catch (err) { }
     }
   };
 
@@ -394,40 +371,70 @@ const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
   );
 };
 
-// -----------------------------
-// Dashboard main export
-// -----------------------------
 export default function Dashboard() {
-  // Replace SAMPLE_PROJECTS with your global projects (eg. from context) if you have one.
   const [projects] = useState(SAMPLE_PROJECTS);
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [searchValue, setSearchValue] = useState('');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const location = useLocation();
+  const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
-  const tab = params.get('tab') || 'all'; // default to 'all'
+  const tab = params.get('tab') || 'all';
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+
+        const response = await axios.get('http://localhost:8000/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        setUser(response.data);
+      } catch (error) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        navigate('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [navigate]);
 
   const filtered = projects.filter((p) => {
     if (tab === 'favorites' && !p.favorite) return false;
     if (tab === 'shared' && !p.shared) return false;
     if (tab === 'external' && !p.external) return false;
     if (tab === 'archived' && !p.archived) return false;
-    if (tab === 'recent' && !(p.createdAt > Date.now() - 1000 * 60 * 60 * 24 * 30)) return false; // recent = 30 days
+    if (tab === 'recent' && !(p.createdAt > Date.now() - 1000 * 60 * 60 * 24 * 30)) return false;
     if (searchValue && !p.title.toLowerCase().includes(searchValue.toLowerCase())) return false;
-    // 'all' shows everything (no extra filter)
     return true;
   });
 
   const toggleMenu = (id) => setActiveMenuId((s) => (s === id ? null : id));
+
+  if (loading) {
+    return <div className="h-screen w-full bg-[#0F0F0F] flex items-center justify-center text-white">Loading...</div>;
+  }
 
   return (
     <div className="flex h-screen w-full bg-[#0F0F0F] text-neutral-400 font-sans overflow-hidden">
       <Sidebar projects={projects} currentTab={tab} />
 
       <main className="flex-1 flex flex-col h-full overflow-y-auto bg-black">
-        <Header searchValue={searchValue} setSearchValue={setSearchValue} />
+        <Header searchValue={searchValue} setSearchValue={setSearchValue} user={user} />
 
         <div className="px-8 pb-8">
-          {/* Quick Actions */}
           <div className="grid grid-cols-4 gap-4 mb-8">
             <QuickAction icon={<Plus size={20} />} label="New Project" to="/projects/new" />
             <QuickAction icon={<Folder size={20} />} label="Upload project" to="/upload" />
@@ -435,7 +442,6 @@ export default function Dashboard() {
             <QuickAction icon={<Building size={20} />} label="New organization" to="/orgs/new" />
           </div>
 
-          {/* Tabs */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-white mb-4">All folders</h2>
             <div className="flex gap-6 border-b border-neutral-800 pb-2 text-sm">
@@ -448,7 +454,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Projects grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((p) => (
               <ProjectCard key={p.id} project={p} activeMenuId={activeMenuId} toggleMenu={toggleMenu} />
