@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, IdCard } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // Import hook
+import OTPVerification from './OTPVerification'; // Ensure path is correct
 
 export default function Login() {
+  const navigate = useNavigate(); // Initialize hook
+  
   const [isLogin, setIsLogin] = useState(true);
+  const [showOtp, setShowOtp] = useState(false); 
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -16,7 +22,6 @@ export default function Login() {
 
   const handleInputChange = (e) => {
     if (error) setError('');
-    
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -26,6 +31,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
 
     const endpoint = isLogin ? '/login' : '/register';
     const url = `http://localhost:8000/api/auth${endpoint}`;
@@ -43,21 +49,57 @@ export default function Login() {
       const response = await axios.post(url, payload);
 
       if (isLogin) {
-        // For login, save the access token and handle success
-        localStorage.setItem('accessToken', response.data.accessToken);
+        // --- 1. LOGIN SUCCESS LOGIC ---
+        // Save tokens
+        localStorage.setItem('accessToken', response.data.accesstoken);
+        if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken);
+        }
+
         console.log('Login successful!', response.data);
+        
+        // REDIRECT TO DASHBOARD
+        navigate('/dashboard'); 
+        
       } else {
-        console.log('Registration successful!', response.data.message);
-        setIsLogin(true);
+        // --- 2. REGISTER SUCCESS LOGIC ---
+        console.log('Registration successful! OTP Sent.');
+        setShowOtp(true); // Show OTP Component
       }
 
     } catch (err) {
       const errorMessage = err.response ? err.response.data.message : 'An unexpected error occurred.';
       setError(errorMessage);
-      console.error('Authentication Error:', errorMessage);
     }
   };
 
+  // --- 3. OTP VERIFICATION SUCCESS LOGIC ---
+  const handleOtpSuccess = () => {
+    setShowOtp(false);   // Hide OTP screen
+    setIsLogin(true);    // Switch to Login Form
+    setSuccessMsg('Account verified successfully! Please login.');
+    
+    // We keep the email/password filled in so the user just clicks "Sign In"
+    // But we clear the password if you prefer security over convenience:
+    // setFormData(prev => ({ ...prev, password: '' })); 
+  };
+
+  const handleOtpBack = () => {
+    setShowOtp(false); // Go back to Signup form
+  };
+
+  // --- RENDER OTP COMPONENT ---
+  if (showOtp) {
+    return (
+      <OTPVerification 
+        email={formData.email} 
+        onVerified={handleOtpSuccess} 
+        onBack={handleOtpBack} 
+      />
+    );
+  }
+
+  // --- RENDER LOGIN/SIGNUP FORM ---
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
@@ -71,6 +113,13 @@ export default function Login() {
                 {isLogin ? 'Sign in to your account' : 'Join us today'}
               </p>
             </div>
+
+            {/* Success Message Area */}
+            {successMsg && (
+                <div className="mb-6 p-4 bg-green-500/10 border border-green-500/50 rounded-xl flex items-center justify-center">
+                    <p className="text-green-400 text-sm font-medium">{successMsg}</p>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {!isLogin && (
@@ -143,7 +192,7 @@ export default function Login() {
                 </button>
               </div>
               
-              {/* Display error messages here */}
+              {/* Error Message */}
               {error && (
                 <p className="text-sm text-red-500 text-center">{error}</p>
               )}
@@ -168,7 +217,6 @@ export default function Login() {
               </button>
             </form>
             
-            {/* ... Social login and toggle section ... */}
             <div className="mt-6 text-center">
               <p className="text-gray-300">
                 {isLogin ? "Don't have an account?" : "Already have an account?"}
@@ -177,6 +225,7 @@ export default function Login() {
                   onClick={() => {
                     setIsLogin(!isLogin);
                     setError('');
+                    setSuccessMsg('');
                   }}
                   className="ml-2 text-[#73CCCB] hover:text-[#59bebd] font-semibold transition-colors"
                 >

@@ -2,12 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Mail, ArrowLeft, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 
-/**
- * Props:
- *  - email: string (required) - email to verify
- *  - onVerified: function() - called when OTP was successfully verified (e.g. navigate to dashboard or show login)
- *  - onBack: function() - optional, to go back to signup
- */
 export default function OTPVerification({ email, onVerified = () => {}, onBack = () => {} }) {
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
@@ -47,25 +41,26 @@ export default function OTPVerification({ email, onVerified = () => {}, onBack =
     setLoading(true);
 
     try {
-      // adjust endpoint as per your backend
-      const res = await axios.post('http://localhost:8000/api/auth/otp-verify', {
+      // Ensure this URL matches your backend route exactly
+      const res = await axios.post('http://localhost:8000/api/auth/verify-otp', {
         email,
         otp
       });
 
-      // server should respond with success / token or message
-      if (res.data && res.data.success) {
-        setInfo('OTP verified successfully. Redirecting...');
-        onVerified(res.data);
-      } else {
-        setError(res.data.message || 'Invalid OTP.');
-      }
+      // 1. Show Success Message
+      setInfo('OTP verified successfully! Redirecting to login...');
+      
+      // 2. Wait 2 seconds so user can read the message, then "Redirect"
+      setTimeout(() => {
+        onVerified(res.data); 
+      }, 2000);
+
     } catch (err) {
       const msg = err.response?.data?.message || 'An unexpected error occurred while verifying OTP.';
       setError(msg);
-    } finally {
-      setLoading(false);
+      setLoading(false); // Only stop loading on error (keep loading on success for smooth transition)
     }
+    // Note: We removed 'finally { setLoading(false) }' so the button stays loading during the redirect delay
   };
 
   const handleResend = async () => {
@@ -122,7 +117,6 @@ export default function OTPVerification({ email, onVerified = () => {}, onBack =
                   name="otp"
                   value={otp}
                   onChange={(e) => {
-                    // accept only digits and limit to 6 chars
                     const val = e.target.value.replace(/\D/g, '').slice(0, 6);
                     setOtp(val);
                     if (error) setError('');
