@@ -5,6 +5,7 @@ import './App.css'
 import Hero from './pages/Hero';
 import Dashboard from './pages/Dashboard';
 import Editor from './pages/Editor';
+import OTPVerification from './pages/OTPVerification';
 
 function App() {
   const [msg,setMsg] = useState('')
@@ -22,6 +23,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/editor" element={<Editor />} />
+        <Route path="/otp-verify" element={<OTPVerification />} />"
       </Routes>
     </Router>
   )
