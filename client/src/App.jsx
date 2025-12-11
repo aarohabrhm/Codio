@@ -6,6 +6,8 @@ import Hero from './pages/Hero';
 import Dashboard from './pages/Dashboard';
 import Editor from './pages/Editor';
 import OTPVerification from './pages/OTPVerification';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   const [msg,setMsg] = useState('')
@@ -23,7 +25,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/editor" element={<Editor />} />
-        <Route path="/otp-verify" element={<OTPVerification />} />"
+        <Route path="/otp-verify" element={<OTPVerification />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </Router>
   )

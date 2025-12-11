@@ -203,9 +203,9 @@ export default function Login() {
                     <input type="checkbox" className="mr-2 rounded bg-white/10 border-white/20" />
                     Remember me
                   </label>
-                  <a href="#" className="text-[#73CCCB] hover:text-[#76eae8] transition-colors">
+                  <button onClick={() => navigate("/forgot-password")} className="text-[#73CCCB] hover:text-[#76eae8] transition-colors">
                     Forgot password?
-                  </a>
+                  </button>
                 </div>
               )}
 
