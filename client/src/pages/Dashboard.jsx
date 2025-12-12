@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import codioLogo from '../assets/logo.png';
+import codioLogo from '../assets/logo.png'; 
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -233,11 +233,15 @@ const Header = ({ searchValue, setSearchValue, user }) => {
         </form>
 
         <div className="flex items-center gap-3 pl-4 border-l border-neutral-800">
-          <img
-            src={user?.avatar || "https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80"}
-            alt="Profile"
-            className="w-8 h-8 rounded-full border border-neutral-700"
-          />
+          {/* UPDATED AVATAR SECTION */}
+          <Link to="/settings" title="Go to Settings">
+            <img
+              src={user?.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
+              alt="Profile"
+              className="w-8 h-8 rounded-full border border-neutral-700 object-cover cursor-pointer hover:opacity-80 transition"
+            />
+          </Link>
+          
           <span className="text-sm font-medium text-white">
             {user ? user.fullname : 'Loading...'}
           </span>
