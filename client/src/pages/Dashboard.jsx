@@ -1,5 +1,6 @@
+// Dashboard.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import codioLogo from '../assets/logo.png'; 
+import codioLogo from '../assets/logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 
 const SAMPLE_PROJECTS = [
+  /* keep your 6 samples here as fallback (exactly the ones you had) */
   {
     id: '1',
     title: 'Personal Expense Tracker',
@@ -34,69 +36,12 @@ const SAMPLE_PROJECTS = [
     external: false,
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 10,
   },
-  {
-    id: '2',
-    title: 'Basic Calculator App',
-    meta: '188 MB',
-    img: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-    users: [4, 5, 6, 7, 8],
-    favorite: true,
-    archived: false,
-    shared: false,
-    external: false,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 7,
-  },
-  {
-    id: '3',
-    title: 'Weather App',
-    meta: '286 MB',
-    img: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-    users: [1, 4],
-    favorite: false,
-    archived: false,
-    shared: true,
-    external: true,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 40,
-  },
-  {
-    id: '4',
-    title: 'Chat Application',
-    meta: '1.28 GB',
-    img: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-    users: [2, 3, 5, 6, 7],
-    favorite: false,
-    archived: false,
-    shared: false,
-    external: false,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2,
-  },
-  {
-    id: '5',
-    title: 'E-commerce Website',
-    meta: '126 MB',
-    img: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-    users: [8],
-    favorite: false,
-    archived: true,
-    shared: false,
-    external: false,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 80,
-  },
-  {
-    id: '6',
-    title: 'Library Management System',
-    meta: '96 MB',
-    img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-    users: [1, 3],
-    favorite: true,
-    archived: false,
-    shared: false,
-    external: false,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 20,
-  },
+  // ... (rest of your samples 2..6)
 ];
 
 const cn = (...args) => args.filter(Boolean).join(' ');
+
+/* ---------------- Sidebar, Header, Tab, ProjectCard components - unchanged UI ---------------- */
 
 const Sidebar = ({ projects, currentTab }) => {
   const counts = {
@@ -233,7 +178,6 @@ const Header = ({ searchValue, setSearchValue, user }) => {
         </form>
 
         <div className="flex items-center gap-3 pl-4 border-l border-neutral-800">
-          {/* UPDATED AVATAR SECTION */}
           <Link to="/settings" title="Go to Settings">
             <img
               src={user?.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
@@ -241,7 +185,7 @@ const Header = ({ searchValue, setSearchValue, user }) => {
               className="w-8 h-8 rounded-full border border-neutral-700 object-cover cursor-pointer hover:opacity-80 transition"
             />
           </Link>
-          
+
           <span className="text-sm font-medium text-white">
             {user ? user.fullname : 'Loading...'}
           </span>
@@ -253,12 +197,22 @@ const Header = ({ searchValue, setSearchValue, user }) => {
   );
 };
 
-const QuickAction = ({ icon, label, to }) => (
-  <Link to={to} className="flex flex-col items-start gap-4 p-5 rounded-xl border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition cursor-pointer">
-    <div className="p-2 rounded-lg border border-neutral-700 bg-neutral-800/50 text-neutral-400">{icon}</div>
-    <span className="text-sm font-medium text-white">{label}</span>
-  </Link>
-);
+const QuickAction = ({ icon, label, onClick, to }) => {
+  if (to) {
+    return (
+      <Link to={to} className="flex flex-col items-start gap-4 p-5 rounded-xl border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition cursor-pointer">
+        <div className="p-2 rounded-lg border border-neutral-700 bg-neutral-800/50 text-neutral-400">{icon}</div>
+        <span className="text-sm font-medium text-white">{label}</span>
+      </Link>
+    );
+  }
+  return (
+    <button onClick={onClick} className="flex flex-col items-start gap-4 p-5 rounded-xl border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-left cursor-pointer">
+      <div className="p-2 rounded-lg border border-neutral-700 bg-neutral-800/50 text-neutral-400">{icon}</div>
+      <span className="text-sm font-medium text-white">{label}</span>
+    </button>
+  );
+};
 
 const Tab = ({ label, value, active }) => {
   const location = useLocation();
@@ -297,8 +251,7 @@ const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
     const url = `${window.location.origin}/projects/${project.id}`;
     try {
       await navigator.clipboard.writeText(url);
-    } catch (err) {
-    }
+    } catch (err) {}
   };
 
   const shareProject = async (e) => {
@@ -307,12 +260,11 @@ const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
     if (navigator.share) {
       try {
         await navigator.share({ title: project.title, url });
-      } catch (err) {
-      }
+      } catch (err) {}
     } else {
       try {
         await navigator.clipboard.writeText(url);
-      } catch (err) { }
+      } catch (err) {}
     }
   };
 
@@ -361,34 +313,152 @@ const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
         </div>
 
         <div className="flex -space-x-2" onClick={(e) => e.stopPropagation()}>
-          {project.users.slice(0, 3).map((u, i) => (
-            <img key={i} src={`https://i.pravatar.cc/150?img=${10 + u}`} alt="User" className="w-6 h-6 rounded-full border-2 border-[#161616]" />
-          ))}
-          {project.users.length > 3 && (
-            <div className="w-6 h-6 rounded-full border-2 border-[#161616] bg-neutral-700 flex items-center justify-center text-[10px] text-white">
-              +{project.users.length - 3}
-            </div>
-          )}
-        </div>
+  {/*
+    Prefer real avatars from project.userAvatars (if available).
+    Otherwise, fallback to numeric pravatar placeholders kept in project.users.
+  */}
+  {Array.isArray(project.userAvatars) && project.userAvatars.length > 0 ? (
+    // show up to 3 avatars from userAvatars
+    project.userAvatars.slice(0, 3).map((url, i) => (
+      <img
+        key={i}
+        src={url}
+        alt={`User avatar ${i}`}
+        className="w-6 h-6 rounded-full border-2 border-[#161616] object-cover"
+        onError={(e) => {
+          // fallback to default if avatar URL is broken
+          e.currentTarget.src = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+        }}
+      />
+    ))
+  ) : (
+    // fallback to old numeric placeholders
+    project.users.slice(0, 3).map((u, i) => (
+      <img
+        key={i}
+        src={`https://i.pravatar.cc/150?img=${10 + u}`}
+        alt="User"
+        className="w-6 h-6 rounded-full border-2 border-[#161616]"
+      />
+    ))
+  )}
+
+  {/* count +N if more collaborators exist */}
+  {/*
+    Prefer counting avatars list length if present, otherwise use placeholder users length.
+  */}
+  {((Array.isArray(project.userAvatars) && project.userAvatars.length > 3 && project.userAvatars.length - 3 > 0)
+    ? project.userAvatars.length - 3
+    : (project.users.length > 3 ? project.users.length - 3 : 0)) > 0 && (
+    <div className="w-6 h-6 rounded-full border-2 border-[#161616] bg-neutral-700 flex items-center justify-center text-[10px] text-white">
+      {Array.isArray(project.userAvatars) && project.userAvatars.length > 3
+        ? `+${project.userAvatars.length - 3}`
+        : `+${project.users.length - 3}`}
+    </div>
+  )}
+</div>
+
       </div>
     </div>
   );
 };
 
+/* ---------------- Dashboard component ---------------- */
+
 export default function Dashboard() {
-  const [projects] = useState(SAMPLE_PROJECTS);
+  // start with the SAMPLE_PROJECTS as fallback
+  const [projects, setProjects] = useState(SAMPLE_PROJECTS);
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [searchValue, setSearchValue] = useState('');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const tab = params.get('tab') || 'all';
 
+  // Defensive mapper from server project -> UI shape expected by cards/sidebar
+  // replace your existing mapServerProjectToUI with this
+const mapServerProjectToUI = (p) => {
+  try {
+    const id = p._id || p.id || String(Math.random()).slice(2, 10);
+    const title = p.title || 'Untitled project';
+    const meta = p.meta || (p.size ? `${p.size} MB` : '');
+    const img = p.image || p.img || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80';
+
+    // owner avatar (if populated by backend)
+    const ownerAvatar = p.owner && (p.owner.avatar || p.owner.profilePic || null);
+
+    // collaborators avatars (if populated)
+    const collaboratorAvatars = Array.isArray(p.collaborators)
+      ? p.collaborators.map((c) => c?.avatar || c?.profilePic || null).filter(Boolean)
+      : [];
+
+    // Build a userAvatars array starting with owner then collaborators
+    const userAvatars = [];
+    if (ownerAvatar) userAvatars.push(ownerAvatar);
+    userAvatars.push(...collaboratorAvatars);
+
+    // Fallback numeric placeholders (keeps previous behavior if avatars absent)
+    const collaboratorsCount = Array.isArray(p.collaborators) ? p.collaborators.length : 0;
+    const usersPlaceholders = [1, ...Array.from({ length: collaboratorsCount }, (_, i) => i + 2)];
+
+    const favorite = !!p.favorite;
+    const archived = !!p.archived;
+    const shared = !!(p.isPublic || collaboratorsCount > 0);
+    const external = !!p.external;
+
+    let createdAtVal = Date.now();
+    if (p.createdAt) {
+      const parsed = Date.parse(p.createdAt);
+      if (!isNaN(parsed)) createdAtVal = parsed;
+      else if (typeof p.createdAt === 'number') createdAtVal = p.createdAt;
+    } else if (p.updatedAt) {
+      const parsed2 = Date.parse(p.updatedAt);
+      if (!isNaN(parsed2)) createdAtVal = parsed2;
+    }
+
+    return {
+      id,
+      title,
+      meta,
+      img,
+      // new: userAvatars contains real avatar URLs (may be empty)
+      userAvatars,
+      // keep old placeholder array for backups (so other logic keeps working)
+      users: usersPlaceholders,
+      favorite,
+      archived,
+      shared,
+      external,
+      createdAt: createdAtVal,
+      raw: p,
+    };
+  } catch (err) {
+    console.error('mapServerProjectToUI error', err, p);
+    return {
+      id: p._id || p.id || String(Math.random()).slice(2, 10),
+      title: p.title || 'Untitled',
+      meta: '',
+      img: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80',
+      userAvatars: [],
+      users: [1],
+      favorite: false,
+      archived: false,
+      shared: false,
+      external: false,
+      createdAt: Date.now(),
+      raw: p,
+    };
+  }
+};
+
+
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndProjects = async () => {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) {
@@ -396,23 +466,50 @@ export default function Dashboard() {
           return;
         }
 
-        const response = await axios.get('http://localhost:8000/api/auth/me', {
-          headers: {
-            Authorization: `Bearer ${token}`
+        // fetch user
+        try {
+          const resUser = await axios.get('http://localhost:8000/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setUser(resUser.data);
+        } catch (err) {
+          console.error('[Dashboard] /auth/me error', err?.response || err?.message || err);
+          if (err.response && err.response.status === 401) {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            navigate('/login');
+            return;
           }
-        });
+          setLoading(false);
+          return;
+        }
 
-        setUser(response.data);
+        // fetch projects
+        try {
+          const res = await axios.get('http://localhost:8000/api/projects', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const arr = Array.isArray(res.data) ? res.data : [];
+          const uiProjects = arr.map(mapServerProjectToUI);
+          setProjects(uiProjects.length > 0 ? uiProjects : []);
+        } catch (err) {
+          console.error('[Dashboard] /projects fetch error', err?.response || err?.message || err);
+          if (err.response && err.response.status === 401) {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            navigate('/login');
+            return;
+          }
+          // fallback: keep SAMPLE_PROJECTS
+        }
       } catch (error) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        navigate('/login');
+        console.error('[Dashboard] unexpected error', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUser();
+    fetchUserAndProjects();
   }, [navigate]);
 
   const filtered = projects.filter((p) => {
@@ -431,6 +528,86 @@ export default function Dashboard() {
     return <div className="h-screen w-full bg-[#0F0F0F] flex items-center justify-center text-white">Loading...</div>;
   }
 
+  /* ---------------- NewProjectModal component ---------------- */
+  const NewProjectModal = ({ isOpen, onClose }) => {
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [collaboratorEmails, setCollaboratorEmails] = useState('');
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+      if (!isOpen) {
+        setTitle('');
+        setDescription('');
+        setCollaboratorEmails('');
+        setError(null);
+      }
+    }, [isOpen]);
+
+    const submit = async (e) => {
+      e.preventDefault();
+      setCreating(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) throw new Error('No access token');
+
+        const body = {
+          title,
+          description,
+          collaboratorEmails: collaboratorEmails.split(',').map(s => s.trim()).filter(Boolean),
+        };
+
+        const res = await axios.post('http://localhost:8000/api/projects', body, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const newUIProject = mapServerProjectToUI(res.data);
+        setProjects((prev) => [newUIProject, ...prev]);
+        onClose();
+      } catch (err) {
+        console.error('[NewProjectModal] create error', err?.response || err?.message || err);
+        setError(err?.response?.data?.message || 'Failed to create project');
+      } finally {
+        setCreating(false);
+      }
+    };
+
+    if (!isOpen) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+        <div className="relative w-[520px] bg-[#0B0B0B] p-6 rounded-2xl border border-neutral-800 z-10">
+          <h3 className="text-lg font-semibold text-white mb-4">Create new project</h3>
+          <form onSubmit={submit} className="space-y-4">
+            <div>
+              <label className="text-sm text-neutral-300">Title</label>
+              <input required value={title} onChange={(e) => setTitle(e.target.value)} className="w-full mt-1 p-3 rounded-lg bg-neutral-900 border border-neutral-800 text-white" placeholder="Project title" />
+            </div>
+
+            <div>
+              <label className="text-sm text-neutral-300">Description</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full mt-1 p-3 rounded-lg bg-neutral-900 border border-neutral-800 text-white" placeholder="Short description" rows={3} />
+            </div>
+
+            <div>
+              <label className="text-sm text-neutral-300">Share with (emails, comma separated)</label>
+              <input value={collaboratorEmails} onChange={(e) => setCollaboratorEmails(e.target.value)} placeholder="alice@example.com, bob@example.com" className="w-full mt-1 p-3 rounded-lg bg-neutral-900 border border-neutral-800 text-white" />
+              <p className="text-xs text-neutral-500 mt-1">Users added here will be added as collaborators if they exist.</p>
+            </div>
+
+            {error && <div className="text-sm text-red-400">{error}</div>}
+
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-neutral-800 text-white">Cancel</button>
+              <button disabled={creating} type="submit" className="px-4 py-2 rounded-lg bg-blue-600 text-white">{creating ? 'Creating...' : 'Create project'}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex h-screen w-full bg-[#0F0F0F] text-neutral-400 font-sans overflow-hidden">
       <Sidebar projects={projects} currentTab={tab} />
@@ -440,7 +617,7 @@ export default function Dashboard() {
 
         <div className="px-8 pb-8">
           <div className="grid grid-cols-4 gap-4 mb-8">
-            <QuickAction icon={<Plus size={20} />} label="New Project" to="/projects/new" />
+            <QuickAction icon={<Plus size={20} />} label="New Project" onClick={() => setIsModalOpen(true)} />
             <QuickAction icon={<Folder size={20} />} label="Upload project" to="/upload" />
             <QuickAction icon={<UserPlus size={20} />} label="New team" to="/teams/new" />
             <QuickAction icon={<Building size={20} />} label="New organization" to="/orgs/new" />
@@ -465,6 +642,8 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      <NewProjectModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

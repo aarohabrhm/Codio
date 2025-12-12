@@ -6,6 +6,7 @@ import { register,login } from './controllers/authcontroller.js';
 import authRoutes from './routes/auth.js'
 import path from 'path'; 
 import { fileURLToPath } from 'url';
+import projectsRouter from './routes/projects.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,10 +29,13 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/',(req,res)=>{
     res.send({message:'Hello from server side'});
 });
+app.use('/project-covers', express.static(path.join(__dirname, 'project-covers')));
 
 
 app.use('/',router);
 app.use('/api/auth',authRoutes)
+app.use('/api/projects', projectsRouter);
+
 
 app.listen(PORT, () => {
     console.log(`http://localhost:${PORT}\n`);
