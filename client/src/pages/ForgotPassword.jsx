@@ -18,16 +18,21 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
+      // 1. Send Request
       const res = await axios.post('http://localhost:8000/api/auth/forgot-password', {
         email,
       });
 
-      setSuccessMsg(res.data.message || 'Password reset OTP sent to your email.');
+      // 2. Handle Success
+      setSuccessMsg(res.data.message || 'Reset link sent! Redirecting to login...');
       
-      // Optionally navigate to OTP page:
-      // navigate('/reset-otp', { state: { email } });
+      // 3. Redirect to Login after 3 seconds
+      setTimeout(() => {
+        navigate('/login');
+      }, 3000);
 
     } catch (err) {
+      // 4. Handle Errors (User not found, Server error, etc.)
       const msg = err.response?.data?.message || 'Failed to send reset email.';
       setError(msg);
     } finally {
@@ -41,7 +46,6 @@ export default function ForgotPassword() {
         <div className="w-full max-w-md">
           <div className="backdrop-blur-2xl bg-gradient-to-tr from-black via-zinc-900 to-zinc-950 border border-zinc-600/100 rounded-4xl p-8">
 
-            {/* Back Button */}
             <button
               className="mb-6 flex items-center text-gray-300 hover:text-white transition"
               onClick={() => navigate("/login")}
@@ -55,7 +59,7 @@ export default function ForgotPassword() {
                 Reset Password
               </h1>
               <p className="text-gray-300">
-                Enter your email to reset your password
+                Enter your email to receive a reset link
               </p>
             </div>
 
@@ -68,12 +72,12 @@ export default function ForgotPassword() {
 
             {/* Error Message */}
             {error && (
-              <p className="text-sm text-red-500 text-center mb-4">{error}</p>
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-center">
+                 <p className="text-sm text-red-500 font-medium">{error}</p>
+              </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-
-              {/* Email Field */}
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-[#73CCCB] transition-colors" />
@@ -94,19 +98,18 @@ export default function ForgotPassword() {
                 />
               </div>
 
-              {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full py-3 px-4 bg-gradient-to-br from-[#92FDFA] via-[#27F8F1] 
+                disabled={loading || successMsg} // Disable if loading or already succeeded
+                className={`w-full py-3 px-4 bg-gradient-to-br from-[#92FDFA] via-[#27F8F1] 
                 to-[#49F0A8] text-black font-montserrat font-bold rounded-2xl shadow-lg 
-                hover:from-[#49F0A8] hover:[#92FDFA] transition-all duration-300"
+                hover:from-[#49F0A8] hover:[#92FDFA] transition-all duration-300 
+                ${(loading || successMsg) ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {loading ? "Sending..." : "Send Reset Link"}
               </button>
             </form>
 
-            {/* Back to Login */}
             <div className="mt-6 text-center">
               <p className="text-gray-300">
                 Remember your password?

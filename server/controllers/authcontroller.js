@@ -3,7 +3,7 @@ import PendingUser from "../models/pendingUser.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../utils/sendEmail.js";
-
+import crypto from "crypto";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -128,5 +128,29 @@ export const login = async (req, res) => {
     } catch (error) {
         console.error("Login Error:", error);
         res.status(500).json({ message: "Server error" });
+    }
+};
+
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "User with this email does not exist" });
+        }
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = Date.now() + 300000;
+        await user.save();
+        const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
+        const emailBody = `You requested a password reset.\n\nPlease click the following link to reset your password:\n\n${resetLink}\n\nIf you did not request this, please ignore this email.`;
+        
+        await sendEmail(email, "Password Reset Request", emailBody);
+
+        res.status(200).json({ message: "Password reset link sent to your email." });
+
+    } catch (error) {
+        console.error("Forgot Password Error:", error);
+        res.status(500).json({ message: "Server error, could not send email." });
     }
 };
