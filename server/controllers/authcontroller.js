@@ -16,8 +16,7 @@ dotenv.config({ path: path.join(__dirname, "../.env") });
 
 export const getMe = async (req, res) => {
     try {
-        // req.user.id comes from the middleware
-        const user = await User.findById(req.user.id).select("-password -otp"); // Exclude sensitive data
+        const user = await User.findById(req.user.id).select("-password -otp");
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -152,5 +151,31 @@ export const forgotPassword = async (req, res) => {
     } catch (error) {
         console.error("Forgot Password Error:", error);
         res.status(500).json({ message: "Server error, could not send email." });
+    }
+};
+
+export const resetPassword = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: "Password reset token is invalid or has expired." });
+        }
+        user.password = password;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+
+        await user.save();
+
+        res.status(200).json({ message: "Password has been reset successfully." });
+
+    } catch (error) {
+        console.error("Reset Password Error:", error);
+        res.status(500).json({ message: "Server error." });
     }
 };

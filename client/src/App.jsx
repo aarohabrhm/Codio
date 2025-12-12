@@ -27,7 +27,7 @@ function App() {
         <Route path="/editor" element={<Editor />} />
         <Route path="/otp-verify" element={<OTPVerification />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
       </Routes>
     </Router>
   )
