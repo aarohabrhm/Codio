@@ -4,7 +4,7 @@ import cors  from 'cors';
 import mongoose from 'mongoose';
 import { register,login } from './controllers/authcontroller.js';
 import authRoutes from './routes/auth.js'
-import path from 'path'; 
+import path from 'path'; c
 import { fileURLToPath } from 'url';
 import projectsRouter from './routes/projects.js';
 
