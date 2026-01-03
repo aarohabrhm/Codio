@@ -13,6 +13,8 @@ export default function Explorer({
   onCancelCreate,
   onCommitRename,
   onCancelRename,
+  modifiedFiles = [],
+  onDelete,
 }) {
   const render = (id, depth = 0) => {
     const node = files[id];
@@ -34,6 +36,8 @@ export default function Explorer({
           onStartCreate={onStartCreate}
           onCommitRename={onCommitRename}
           onCancelRename={onCancelRename}
+          isModified={modifiedFiles.includes(id)}
+          onDelete={onDelete}
         />
         {node.isOpen &&
           node.children?.map((c) => render(c, depth + 1))}

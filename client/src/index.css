@@ -1,0 +1,15 @@
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: #0a0f1a;
+	color: #e5e7eb;
+	font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+#root {
+	height: 100vh;
+}

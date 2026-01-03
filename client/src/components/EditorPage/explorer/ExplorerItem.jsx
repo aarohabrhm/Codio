@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import FileIcon from "./FileIcon";
-import { ChevronDown, ChevronRight, FilePlus, FolderPlus } from "lucide-react";
+import { ChevronDown, ChevronRight, FilePlus, FolderPlus, Trash2 } from "lucide-react";
 
 export default function ExplorerItem({
   node,
@@ -16,6 +16,8 @@ export default function ExplorerItem({
   onCancelRename,
   onCommitCreate,
   onCancelCreate,
+  isModified = false,
+  onDelete,
 }) {
   const [value, setValue] = useState(node.name || "");
   const inputRef = useRef(null);
@@ -84,7 +86,7 @@ export default function ExplorerItem({
               commit();
             }
           }}
-          className="flex-1 bg-transparent border border-[#1f2937] rounded px-1 py-0.5 text-sm text-gray-100 outline-none"
+          className="flex-1 bg-transparent border border-[#1f2937] rounded px-1 py-0.5 text-xs text-gray-100 outline-none"
         />
       </div>
     );
@@ -98,46 +100,58 @@ export default function ExplorerItem({
       }
       onDoubleClick={() => onStartRename?.(node.id)}
       className={`group flex items-center justify-between px-2 py-1 cursor-pointer ${
-        active ? "bg-[#1f2937]" : "hover:bg-[#111316]"
+        active ? "bg-[#1a1a1a]" : "hover:bg-[#151515]"
       }`}
     >
       <div className="flex items-center gap-2">
         {node.type === "folder" &&
-          (node.isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
-        <FileIcon name={node.name} type={node.type} />
-        <span className="text-sm truncate max-w-[140px]">{node.name}</span>
+          (node.isOpen ? <ChevronDown size={14} className="text-gray-500" /> : <ChevronRight size={14} className="text-gray-500" />)}
+        <FileIcon name={node.name} type={node.type} isOpen={node.isOpen} />
+        <span className="text-xs truncate max-w-[140px] text-gray-300">{node.name}</span>
+        {isModified && (
+          <span className="w-1 h-1 rounded-full bg-yellow-400 ml-1"></span>
+        )}
       </div>
-      {node.type === "folder" && (
-        <div
-          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => e.stopPropagation()}
+      <div
+        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {node.type === "folder" && (
+          <>
+            <button
+              title="New file"
+              className="p-1 rounded hover:bg-[#2a2a2a] text-gray-400"
+              onClick={() => {
+                if (!node.isOpen) {
+                  onToggle?.(node.id);
+                }
+                onStartCreate?.(node.id, "file");
+              }}
+            >
+              <FilePlus size={12} />
+            </button>
+            <button
+              title="New folder"
+              className="p-1 rounded hover:bg-[#2a2a2a] text-gray-400"
+              onClick={() => {
+                if (!node.isOpen) {
+                  onToggle?.(node.id);
+                }
+                onStartCreate?.(node.id, "folder");
+              }}
+            >
+              <FolderPlus size={12} />
+            </button>
+          </>
+        )}
+        <button
+          title="Delete"
+          className="p-1 rounded hover:bg-[#2a2a2a] text-gray-400 hover:text-red-400"
+          onClick={() => onDelete?.(node.id)}
         >
-          <button
-            title="New file"
-            className="p-1 rounded hover:bg-[#020617] text-gray-400"
-            onClick={() => {
-              if (!node.isOpen) {
-                onToggle?.(node.id);
-              }
-              onStartCreate?.(node.id, "file");
-            }}
-          >
-            <FilePlus size={12} />
-          </button>
-          <button
-            title="New folder"
-            className="p-1 rounded hover:bg-[#020617] text-gray-400"
-            onClick={() => {
-              if (!node.isOpen) {
-                onToggle?.(node.id);
-              }
-              onStartCreate?.(node.id, "folder");
-            }}
-          >
-            <FolderPlus size={12} />
-          </button>
-        </div>
-      )}
+          <Trash2 size={12} />
+        </button>
+      </div>
     </div>
   );
 }

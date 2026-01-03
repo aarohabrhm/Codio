@@ -1,7 +1,6 @@
 import { useState } from "react";
-import codioLogo from "../../assets/logo.png";
 import Explorer from "../EditorPage/explorer/Explorer";
-import { FilePlus, FolderPlus, Search, Settings, Zap } from "lucide-react";
+import { FilePlus, FolderPlus, MoreHorizontal, ChevronDown, ChevronRight, GitBranch, RefreshCw, Check, Plus } from "lucide-react";
 
 export default function LeftPanel({
   tab,
@@ -12,13 +11,12 @@ export default function LeftPanel({
   onCreateFile,
   onCreateFolder,
   onRename,
-  chatMessages,
-  chatInput,
-  setChatInput,
-  onChatSend,
-  onClearChat,
+  onDelete,
+  modifiedFiles = [],
+  searchQuery = "",
+  setSearchQuery,
 }) {
-  const [creating, setCreating] = useState(null); // { parentId, type }
+  const [creating, setCreating] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
 
   const startCreate = (parentId, type) => {
@@ -59,50 +57,39 @@ export default function LeftPanel({
   };
 
   return (
-    <aside className="w-72 bg-[#0f1720] border-r border-[#111318] flex flex-col">
-
+    <aside className="w-64 bg-[#0f0f0f] border-r border-[#1a1a1a] flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-3 border-b border-[#0b1114]">
-        <div className="flex items-center gap-2">
-          <img
-            src={codioLogo}
-            alt="Codio"
-            className="w-6 h-6 rounded-lg object-cover"
-          />
-          <div>
-            <div className="text-sm font-medium text-gray-200">CODIO</div>
-            <div className="text-xs text-gray-400">Workspace</div>
-          </div>
+      <div className="flex items-center justify-between px-4 py-3 text-xs text-gray-400 uppercase tracking-wider">
+        <span>{tab === "files" ? "Explorer" : tab === "search" ? "Search" : tab === "sourceControl" ? "Source Control" : "Guide"}</span>
+        <div className="flex items-center gap-1">
+          {tab === "files" && (
+            <>
+              <button
+                className="p-1 rounded hover:bg-[#1a1a1a] text-gray-400 hover:text-white"
+                title="New file"
+                onClick={() => startCreate("root", "file")}
+              >
+                <FilePlus size={14} />
+              </button>
+              <button
+                className="p-1 rounded hover:bg-[#1a1a1a] text-gray-400 hover:text-white"
+                title="New folder"
+                onClick={() => startCreate("root", "folder")}
+              >
+                <FolderPlus size={14} />
+              </button>
+            </>
+          )}
+          <button className="p-1 hover:bg-[#1a1a1a] rounded">
+            <MoreHorizontal size={14} />
+          </button>
         </div>
-
-        {tab === "files" && (
-          <div className="flex items-center gap-2">
-            <button className="p-1 rounded hover:bg-[#0b1114] text-gray-300">
-              <Search size={16} />
-            </button>
-            <button
-              className="p-1 rounded hover:bg-[#0b1114] text-gray-300"
-              title="New file"
-              onClick={() => startCreate("root", "file")}
-            >
-              <FilePlus size={16} />
-            </button>
-            <button
-              className="p-1 rounded hover:bg-[#0b1114] text-gray-300"
-              title="New folder"
-              onClick={() => startCreate("root", "folder")}
-            >
-              <FolderPlus size={16} />
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-
         {tab === "files" && (
-          <div className="p-2">
+          <div className="pt-1">
             <Explorer
               files={files}
               activeFileId={activeFileId}
@@ -116,108 +103,92 @@ export default function LeftPanel({
               onCancelCreate={handleCancelCreate}
               onCommitRename={handleCommitRename}
               onCancelRename={handleCancelRename}
+              modifiedFiles={modifiedFiles}
+              onDelete={onDelete}
             />
           </div>
         )}
 
+        {tab === "search" && (
+          <div className="p-3">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery?.(e.target.value)}
+              placeholder="Search"
+              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-cyan-500 placeholder:text-gray-600"
+            />
+            <div className="mt-4 text-xs text-gray-500 text-center">
+              {searchQuery ? "Searching..." : "Type to search in files"}
+            </div>
+          </div>
+        )}
+
+        {tab === "sourceControl" && (
+          <div className="p-3">
+            <div className="flex items-center gap-2 mb-4">
+              <GitBranch size={16} className="text-gray-400" />
+              <span className="text-sm text-gray-300">main</span>
+              <button className="ml-auto p-1 hover:bg-[#1a1a1a] rounded text-gray-400">
+                <RefreshCw size={14} />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Changes</div>
+              {modifiedFiles.length > 0 ? (
+                modifiedFiles.map((fileId) => (
+                  <div key={fileId} className="flex items-center gap-2 px-2 py-1 text-sm text-gray-300 hover:bg-[#1a1a1a] rounded">
+                    <span className="w-4 h-4 rounded-full bg-yellow-500/20 text-yellow-400 text-[10px] flex items-center justify-center">M</span>
+                    <span className="truncate">{files[fileId]?.name}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-xs text-gray-500 text-center py-4">
+                  No changes detected
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <button className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-lg text-sm text-gray-300">
+                <Check size={14} />
+                Commit
+              </button>
+              <button className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-lg text-sm text-gray-300">
+                <Plus size={14} />
+                Stage All
+              </button>
+            </div>
+          </div>
+        )}
+
         {tab === "guide" && (
-          <div className="p-3 text-sm text-gray-300">
-            <div className="font-medium mb-2">Guide</div>
-            <div className="text-gray-400">
-              Quick tips and documentation live here. Use this space to show your project's README, helpful links, or onboarding steps.
+          <div className="p-4 text-sm text-gray-300 space-y-3">
+            <div className="font-medium text-white">Getting Started</div>
+            <div className="text-gray-500 leading-relaxed text-xs">
+              Welcome to Codio! Here are some quick tips to get you started:
             </div>
+            <ul className="space-y-2 text-xs text-gray-400">
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-400">•</span>
+                Use the Explorer to navigate your project files
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-400">•</span>
+                Press Ctrl+S to save your changes
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-400">•</span>
+                Open the chat panel to get AI assistance
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-400">•</span>
+                Use Source Control to manage your git changes
+              </li>
+            </ul>
           </div>
         )}
-
-        {tab === "help" && (
-          <div className="p-3 text-sm text-gray-300">
-            <div className="font-medium mb-2">Help</div>
-            <div className="text-gray-400">
-              Search docs or open a support ticket. Add FAQs or shortcuts here.
-            </div>
-          </div>
-        )}
-
-        {tab === "chat" && (
-          <div className="h-full flex flex-col">
-            {/* Chat Header */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-[#0b1114] bg-[#071018]">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-gradient-to-br from-[#22c55e] via-[#22d3ee] to-[#6366f1] flex items-center justify-center text-[10px] font-semibold text-black">
-                  AI
-                </div>
-                <div>
-                  <div className="text-xs font-medium text-gray-100">Chat</div>
-                  <div className="text-[11px] text-gray-500">Codio Assistant</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 text-gray-400">
-                <button
-                  title="Clear"
-                  className="px-2 py-1 text-[11px] rounded hover:bg-[#020617]"
-                  onClick={onClearChat}
-                >
-                  Clear
-                </button>
-                <button title="Settings" className="p-1 rounded hover:bg-[#020617]"><Settings size={14} /></button>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-3 py-3 custom-scrollbar space-y-3 bg-[#020617]">
-              {chatMessages.map((m, i) => (
-                <div key={i} className="flex flex-col gap-1">
-                  <div className="text-[11px] font-medium text-gray-500">
-                    {m.role === "assistant" ? "Assistant" : "You"}
-                  </div>
-                  <div
-                    className={`text-sm leading-relaxed rounded-md border px-3 py-2 max-w-full whitespace-pre-wrap ${
-                      m.role === "assistant"
-                        ? "bg-[#020617] border-[#1f2937] text-gray-100"
-                        : "bg-[#020617] border-[#334155] text-sky-100"
-                    }`}
-                  >
-                    {m.text}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Input */}
-            <div className="border-t border-[#1f2937] bg-[#020617] px-3 py-2">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Ask anything about this workspace..."
-                  className="flex-1 bg-[#020617] border border-[#1f2937] rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 placeholder:text-gray-500"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      onChatSend();
-                    }
-                  }}
-                />
-                <button
-                  onClick={onChatSend}
-                  className="px-3 py-2 bg-sky-500 hover:bg-sky-400 rounded-md text-sm font-medium text-black flex items-center gap-1"
-                >
-                  <Zap size={14} />
-                  <span>Send</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="px-3 py-2 border-t border-[#0b1114] bg-[#071014] text-xs text-gray-400">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-yellow-400" />
-          <div>index.js updated 2m ago</div>
-        </div>
       </div>
     </aside>
   );

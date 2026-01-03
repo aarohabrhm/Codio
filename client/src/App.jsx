@@ -5,6 +5,8 @@ import './App.css'
 import Hero from './pages/Hero';
 import Dashboard from './pages/Dashboard';
 import Editor from './pages/Editor';
+import Account from './pages/Account';
+import Settings from './pages/Settings';
 import OTPVerification from './pages/OTPVerification';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -25,6 +27,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/editor" element={<Editor />} />
+        <Route path="/account" element={<Account />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/otp-verify" element={<OTPVerification />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
