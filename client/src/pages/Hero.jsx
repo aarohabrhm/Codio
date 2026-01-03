@@ -236,7 +236,7 @@ const FeaturesSection = () => {
           {features.map((feature, index) => (
             <div 
               key={index}
-              className="group relative p-6 rounded-2xl border transition-all duration-300 overflow-hidden bg-gradient-to-b from-gray-800/40 to-[#0a0a0a] border-gray-700/60 border-gray-800/60"
+              className="group relative p-6 rounded-2xl border transition-all duration-300 overflow-hidden bg-gradient-to-b from-gray-800/40 to-[#0a0a0a] border-gray-800/60"
             >
               {/* Spotlight effect */}
               <div 
