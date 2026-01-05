@@ -9,9 +9,30 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const DEFAULT_FILES = {
-  root: { id: "root", name: "root", type: "folder", isOpen: true, children: ["main.js", "readme.md"] },
-  "main.js": { id: "main.js", name: "main.js", type: "file", parent: "root", content: "// Welcome to your new project!\nconsole.log('Hello World');" },
-  "readme.md": { id: "readme.md", name: "README.md", type: "file", parent: "root", content: "# New Project\n\nThis is a sample project." }
+  "root": {
+    id: "root",
+    name: "root",
+    type: "folder",
+    path: "/root",
+    isOpen: true,
+    children: ["main.js", "readme.md"]
+  },
+  "main.js": {
+    id: "main.js",
+    name: "main.js",
+    type: "file",
+    path: "/root/main.js",
+    parent: "root",
+    content: "// Welcome to your new project!\nconsole.log('Hello World');"
+  },
+  "readme.md": {
+    id: "readme.md",
+    name: "README.md",
+    type: "file",
+    path: "/root/readme.md",
+    parent: "root",
+    content: "# New Project\n\nThis is a sample project."
+  }
 };
 
 const getRandomCoverUrl = (req) => {
@@ -101,14 +122,12 @@ export const getProjectById = async (req, res) => {
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
     // Auth check
-    const isOwner = project.owner && project.owner._id && project.owner._id.equals
-      ? project.owner._id.equals(req.user.id)
-      : String(project.owner) === String(req.user.id);
+    const isOwner = String(project.owner._id) === String(req.user.id);
+    const isCollaborator = project.collaborators.some(c => String(c._id) === String(req.user.id));
 
-    const isCollaborator = Array.isArray(project.collaborators) &&
-      project.collaborators.some(c => (c._id ? c._id.equals(req.user.id) : String(c) === String(req.user.id)));
-
-    if (!isOwner && !isCollaborator) return res.status(403).json({ message: 'Forbidden' });
+    if (!isOwner && !isCollaborator && !project.isPublic) {
+        return res.status(403).json({ message: 'Forbidden' });
+    }
 
     return res.json(project);
   } catch (error) {
@@ -120,46 +139,33 @@ export const getProjectById = async (req, res) => {
 export const updateProject = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body; // allowed: title, description, collaboratorEmails, isPublic, image
+    const updates = req.body;
 
     const project = await Project.findById(id);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
-    // only owner may update metadata/collaborators
-    if (!project.owner || !project.owner.equals(req.user.id)) {
-      // if stored as ObjectId or string compare both ways
-      const ownerIdStr = project.owner ? String(project.owner) : null;
-      if (ownerIdStr !== String(req.user.id)) {
-        return res.status(403).json({ message: 'Only owner can modify project' });
-      }
+    // Only owner/collab can update
+    const isOwner = String(project.owner) === String(req.user.id);
+    const isCollaborator = project.collaborators.some(collabId => String(collabId) === String(req.user.id));
+
+    if (!isOwner && !isCollaborator) {
+         return res.status(403).json({ message: 'Permission denied' });
     }
 
-    // handle collaborator email resolution
-    if (updates.collaboratorEmails !== undefined) {
-      const emailsArr = Array.isArray(updates.collaboratorEmails)
-        ? updates.collaboratorEmails
-        : String(updates.collaboratorEmails).split(',').map(e => e.trim()).filter(Boolean);
-
-      let collaborators = [];
-      if (emailsArr.length) {
-        const users = await User.find({ email: { $in: emailsArr } }).select('_id');
-        collaborators = users.map(u => u._id);
-      }
-      project.collaborators = collaborators;
-      project.isPublic = collaborators.length === 0 ? false : true;
+    // --- FIX: Update files if provided ---
+    if (updates.files) {
+        project.files = updates.files;
+        project.markModified('files'); // Required for Mixed/Object types in Mongoose
     }
 
-    // update simple fields explicitly
-    if (typeof updates.title === 'string') project.title = updates.title;
-    if (typeof updates.description === 'string') project.description = updates.description;
-    if (typeof updates.isPublic === 'boolean') project.isPublic = updates.isPublic;
-    if (typeof updates.image === 'string') project.image = updates.image;
+    // Update metadata (Owner only for sensitive fields)
+    if (isOwner) {
+        if (updates.title) project.title = updates.title;
+        if (updates.description) project.description = updates.description;
+        if (updates.isPublic !== undefined) project.isPublic = updates.isPublic;
+    }
 
     await project.save();
-
-    await project.populate('owner', 'fullname username avatar email');
-    await project.populate('collaborators', 'fullname username avatar email');
-
     return res.json(project);
   } catch (error) {
     console.error('updateProject error', error);

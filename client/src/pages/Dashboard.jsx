@@ -1,48 +1,18 @@
-// Dashboard.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import codioLogo from '../assets/logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
-  Search,
-  Home,
-  LayoutGrid,
-  Folder,
-  Settings,
-  HelpCircle,
-  Plus,
-  Palette,
-  UserPlus,
-  Building,
-  MoreVertical,
-  Link as LinkIcon,
-  Share2,
-  Shield,
-  Bell,
-  FolderGit2,
+  Search, Home, LayoutGrid, Folder, Settings, HelpCircle,
+  Plus, Palette, UserPlus, Building, MoreVertical,
+  Link as LinkIcon, Share2, Shield, Bell, FolderGit2,
 } from 'lucide-react';
 
-const SAMPLE_PROJECTS = [
-  /* keep your 6 samples here as fallback (exactly the ones you had) */
-  {
-    id: '1',
-    title: 'Personal Expense Tracker',
-    meta: '92 MB',
-    img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-    users: [1, 2, 3],
-    favorite: false,
-    archived: false,
-    shared: true,
-    external: false,
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 10,
-  },
-  // ... (rest of your samples 2..6)
-];
+const SAMPLE_PROJECTS = []; // Empty default, will load from API
 
 const cn = (...args) => args.filter(Boolean).join(' ');
 
-/* ---------------- Sidebar, Header, Tab, ProjectCard components - unchanged UI ---------------- */
-
+// --- Sidebar Component ---
 const Sidebar = ({ projects, currentTab }) => {
   const counts = {
     all: projects.length,
@@ -141,6 +111,7 @@ const Sidebar = ({ projects, currentTab }) => {
   );
 };
 
+// --- Header Component ---
 const Header = ({ searchValue, setSearchValue, user }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -197,6 +168,7 @@ const Header = ({ searchValue, setSearchValue, user }) => {
   );
 };
 
+// --- Helper Components ---
 const QuickAction = ({ icon, label, onClick, to }) => {
   if (to) {
     return (
@@ -232,6 +204,7 @@ const Tab = ({ label, value, active }) => {
   );
 };
 
+// --- ProjectCard Component ---
 const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
   const isMenuOpen = activeMenuId === project?.id;
   const navigate = useNavigate();
@@ -249,22 +222,16 @@ const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
   const copyLink = async (e) => {
     e.stopPropagation();
     const url = `${window.location.origin}/projects/${project.id}`;
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch (err) {}
+    try { await navigator.clipboard.writeText(url); } catch (err) {}
   };
 
   const shareProject = async (e) => {
     e.stopPropagation();
     const url = `${window.location.origin}/projects/${project.id}`;
     if (navigator.share) {
-      try {
-        await navigator.share({ title: project.title, url });
-      } catch (err) {}
+      try { await navigator.share({ title: project.title, url }); } catch (err) {}
     } else {
-      try {
-        await navigator.clipboard.writeText(url);
-      } catch (err) {}
+      try { await navigator.clipboard.writeText(url); } catch (err) {}
     }
   };
 
@@ -276,7 +243,8 @@ const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
   return (
     <div
       className="group relative bg-[#161616] rounded-xl p-3 border border-neutral-800 hover:border-neutral-700 transition cursor-pointer"
-      onClick={() => navigate(`/projects/${project.id}`)}
+      // --- FIX: Navigate to /editor/:id ---
+      onClick={() => navigate(`/editor/${project.id}`)}
     >
       <div className="relative h-48 w-full mb-4 overflow-hidden rounded-lg">
         <img src={project.img} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
@@ -313,60 +281,47 @@ const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
         </div>
 
         <div className="flex -space-x-2" onClick={(e) => e.stopPropagation()}>
-  {/*
-    Prefer real avatars from project.userAvatars (if available).
-    Otherwise, fallback to numeric pravatar placeholders kept in project.users.
-  */}
-  {Array.isArray(project.userAvatars) && project.userAvatars.length > 0 ? (
-    // show up to 3 avatars from userAvatars
-    project.userAvatars.slice(0, 3).map((url, i) => (
-      <img
-        key={i}
-        src={url}
-        alt={`User avatar ${i}`}
-        className="w-6 h-6 rounded-full border-2 border-[#161616] object-cover"
-        onError={(e) => {
-          // fallback to default if avatar URL is broken
-          e.currentTarget.src = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-        }}
-      />
-    ))
-  ) : (
-    // fallback to old numeric placeholders
-    project.users.slice(0, 3).map((u, i) => (
-      <img
-        key={i}
-        src={`https://i.pravatar.cc/150?img=${10 + u}`}
-        alt="User"
-        className="w-6 h-6 rounded-full border-2 border-[#161616]"
-      />
-    ))
-  )}
+          {Array.isArray(project.userAvatars) && project.userAvatars.length > 0 ? (
+            project.userAvatars.slice(0, 3).map((url, i) => (
+              <img
+                key={i}
+                src={url}
+                alt={`User avatar ${i}`}
+                className="w-6 h-6 rounded-full border-2 border-[#161616] object-cover"
+                onError={(e) => { e.currentTarget.src = 'https://cdn-icons-png.flaticon.com/512/149/149071.png'; }}
+              />
+            ))
+          ) : (
+            project.users.slice(0, 3).map((u, i) => (
+              <img
+                key={i}
+                src={`https://i.pravatar.cc/150?img=${10 + u}`}
+                alt="User"
+                className="w-6 h-6 rounded-full border-2 border-[#161616]"
+              />
+            ))
+          )}
 
-  {/* count +N if more collaborators exist */}
-  {/*
-    Prefer counting avatars list length if present, otherwise use placeholder users length.
-  */}
-  {((Array.isArray(project.userAvatars) && project.userAvatars.length > 3 && project.userAvatars.length - 3 > 0)
-    ? project.userAvatars.length - 3
-    : (project.users.length > 3 ? project.users.length - 3 : 0)) > 0 && (
-    <div className="w-6 h-6 rounded-full border-2 border-[#161616] bg-neutral-700 flex items-center justify-center text-[10px] text-white">
-      {Array.isArray(project.userAvatars) && project.userAvatars.length > 3
-        ? `+${project.userAvatars.length - 3}`
-        : `+${project.users.length - 3}`}
-    </div>
-  )}
-</div>
-
+          {((Array.isArray(project.userAvatars) && project.userAvatars.length > 3 && project.userAvatars.length - 3 > 0)
+            ? project.userAvatars.length - 3
+            : (project.users.length > 3 ? project.users.length - 3 : 0)) > 0 && (
+            <div className="w-6 h-6 rounded-full border-2 border-[#161616] bg-neutral-700 flex items-center justify-center text-[10px] text-white">
+              {Array.isArray(project.userAvatars) && project.userAvatars.length > 3
+                ? `+${project.userAvatars.length - 3}`
+                : `+${project.users.length - 3}`}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-/* ---------------- Dashboard component ---------------- */
-
+// --- Dashboard Component ---
 export default function Dashboard() {
-  // start with the SAMPLE_PROJECTS as fallback
+  const openProject = (projectId) => {
+    navigate(`/editor/${projectId}`);
+  };
   const [projects, setProjects] = useState(SAMPLE_PROJECTS);
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [searchValue, setSearchValue] = useState('');
@@ -380,82 +335,55 @@ export default function Dashboard() {
   const params = new URLSearchParams(location.search);
   const tab = params.get('tab') || 'all';
 
-  // Defensive mapper from server project -> UI shape expected by cards/sidebar
-  // replace your existing mapServerProjectToUI with this
-const mapServerProjectToUI = (p) => {
-  try {
-    const id = p._id || p.id || String(Math.random()).slice(2, 10);
-    const title = p.title || 'Untitled project';
-    const meta = p.meta || (p.size ? `${p.size} MB` : '');
-    const img = p.image || p.img || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80';
+  const mapServerProjectToUI = (p) => {
+    try {
+      const id = p._id || p.id || String(Math.random()).slice(2, 10);
+      const title = p.title || 'Untitled project';
+      const meta = p.meta || (p.size ? `${p.size} MB` : '');
+      const img = p.image || p.img || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80';
 
-    // owner avatar (if populated by backend)
-    const ownerAvatar = p.owner && (p.owner.avatar || p.owner.profilePic || null);
+      const ownerAvatar = p.owner && (p.owner.avatar || p.owner.profilePic || null);
+      const collaboratorAvatars = Array.isArray(p.collaborators)
+        ? p.collaborators.map((c) => c?.avatar || c?.profilePic || null).filter(Boolean)
+        : [];
 
-    // collaborators avatars (if populated)
-    const collaboratorAvatars = Array.isArray(p.collaborators)
-      ? p.collaborators.map((c) => c?.avatar || c?.profilePic || null).filter(Boolean)
-      : [];
+      const userAvatars = [];
+      if (ownerAvatar) userAvatars.push(ownerAvatar);
+      userAvatars.push(...collaboratorAvatars);
 
-    // Build a userAvatars array starting with owner then collaborators
-    const userAvatars = [];
-    if (ownerAvatar) userAvatars.push(ownerAvatar);
-    userAvatars.push(...collaboratorAvatars);
+      const collaboratorsCount = Array.isArray(p.collaborators) ? p.collaborators.length : 0;
+      const usersPlaceholders = [1, ...Array.from({ length: collaboratorsCount }, (_, i) => i + 2)];
 
-    // Fallback numeric placeholders (keeps previous behavior if avatars absent)
-    const collaboratorsCount = Array.isArray(p.collaborators) ? p.collaborators.length : 0;
-    const usersPlaceholders = [1, ...Array.from({ length: collaboratorsCount }, (_, i) => i + 2)];
+      const favorite = !!p.favorite;
+      const archived = !!p.archived;
+      const shared = !!(p.isPublic || collaboratorsCount > 0);
+      const external = !!p.external;
 
-    const favorite = !!p.favorite;
-    const archived = !!p.archived;
-    const shared = !!(p.isPublic || collaboratorsCount > 0);
-    const external = !!p.external;
+      let createdAtVal = Date.now();
+      if (p.createdAt) {
+        const parsed = Date.parse(p.createdAt);
+        if (!isNaN(parsed)) createdAtVal = parsed;
+        else if (typeof p.createdAt === 'number') createdAtVal = p.createdAt;
+      } else if (p.updatedAt) {
+        const parsed2 = Date.parse(p.updatedAt);
+        if (!isNaN(parsed2)) createdAtVal = parsed2;
+      }
 
-    let createdAtVal = Date.now();
-    if (p.createdAt) {
-      const parsed = Date.parse(p.createdAt);
-      if (!isNaN(parsed)) createdAtVal = parsed;
-      else if (typeof p.createdAt === 'number') createdAtVal = p.createdAt;
-    } else if (p.updatedAt) {
-      const parsed2 = Date.parse(p.updatedAt);
-      if (!isNaN(parsed2)) createdAtVal = parsed2;
+      return {
+        id, title, meta, img, userAvatars, users: usersPlaceholders,
+        favorite, archived, shared, external, createdAt: createdAtVal, raw: p,
+      };
+    } catch (err) {
+      console.error('mapServerProjectToUI error', err, p);
+      return {
+        id: p._id || p.id || String(Math.random()).slice(2, 10),
+        title: p.title || 'Untitled',
+        meta: '', img: '', userAvatars: [], users: [1],
+        favorite: false, archived: false, shared: false, external: false,
+        createdAt: Date.now(), raw: p,
+      };
     }
-
-    return {
-      id,
-      title,
-      meta,
-      img,
-      // new: userAvatars contains real avatar URLs (may be empty)
-      userAvatars,
-      // keep old placeholder array for backups (so other logic keeps working)
-      users: usersPlaceholders,
-      favorite,
-      archived,
-      shared,
-      external,
-      createdAt: createdAtVal,
-      raw: p,
-    };
-  } catch (err) {
-    console.error('mapServerProjectToUI error', err, p);
-    return {
-      id: p._id || p.id || String(Math.random()).slice(2, 10),
-      title: p.title || 'Untitled',
-      meta: '',
-      img: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80',
-      userAvatars: [],
-      users: [1],
-      favorite: false,
-      archived: false,
-      shared: false,
-      external: false,
-      createdAt: Date.now(),
-      raw: p,
-    };
-  }
-};
-
+  };
 
   useEffect(() => {
     const fetchUserAndProjects = async () => {
@@ -465,15 +393,12 @@ const mapServerProjectToUI = (p) => {
           navigate('/login');
           return;
         }
-
-        // fetch user
         try {
           const resUser = await axios.get('http://localhost:8000/api/auth/me', {
             headers: { Authorization: `Bearer ${token}` },
           });
           setUser(resUser.data);
         } catch (err) {
-          console.error('[Dashboard] /auth/me error', err?.response || err?.message || err);
           if (err.response && err.response.status === 401) {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
@@ -483,8 +408,6 @@ const mapServerProjectToUI = (p) => {
           setLoading(false);
           return;
         }
-
-        // fetch projects
         try {
           const res = await axios.get('http://localhost:8000/api/projects', {
             headers: { Authorization: `Bearer ${token}` },
@@ -493,14 +416,7 @@ const mapServerProjectToUI = (p) => {
           const uiProjects = arr.map(mapServerProjectToUI);
           setProjects(uiProjects.length > 0 ? uiProjects : []);
         } catch (err) {
-          console.error('[Dashboard] /projects fetch error', err?.response || err?.message || err);
-          if (err.response && err.response.status === 401) {
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            navigate('/login');
-            return;
-          }
-          // fallback: keep SAMPLE_PROJECTS
+           // Handle Error
         }
       } catch (error) {
         console.error('[Dashboard] unexpected error', error);
@@ -508,7 +424,6 @@ const mapServerProjectToUI = (p) => {
         setLoading(false);
       }
     };
-
     fetchUserAndProjects();
   }, [navigate]);
 
@@ -528,7 +443,7 @@ const mapServerProjectToUI = (p) => {
     return <div className="h-screen w-full bg-[#0F0F0F] flex items-center justify-center text-white">Loading...</div>;
   }
 
-  /* ---------------- NewProjectModal component ---------------- */
+  // --- NewProjectModal ---
   const NewProjectModal = ({ isOpen, onClose }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -537,10 +452,7 @@ const mapServerProjectToUI = (p) => {
 
     useEffect(() => {
       if (!isOpen) {
-        setTitle('');
-        setDescription('');
-        setCollaboratorEmails('');
-        setError(null);
+        setTitle(''); setDescription(''); setCollaboratorEmails(''); setError(null);
       }
     }, [isOpen]);
 
@@ -551,22 +463,17 @@ const mapServerProjectToUI = (p) => {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) throw new Error('No access token');
-
         const body = {
-          title,
-          description,
+          title, description,
           collaboratorEmails: collaboratorEmails.split(',').map(s => s.trim()).filter(Boolean),
         };
-
         const res = await axios.post('http://localhost:8000/api/projects', body, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         const newUIProject = mapServerProjectToUI(res.data);
         setProjects((prev) => [newUIProject, ...prev]);
         onClose();
       } catch (err) {
-        console.error('[NewProjectModal] create error', err?.response || err?.message || err);
         setError(err?.response?.data?.message || 'Failed to create project');
       } finally {
         setCreating(false);
@@ -584,20 +491,15 @@ const mapServerProjectToUI = (p) => {
               <label className="text-sm text-neutral-300">Title</label>
               <input required value={title} onChange={(e) => setTitle(e.target.value)} className="w-full mt-1 p-3 rounded-lg bg-neutral-900 border border-neutral-800 text-white" placeholder="Project title" />
             </div>
-
             <div>
               <label className="text-sm text-neutral-300">Description</label>
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full mt-1 p-3 rounded-lg bg-neutral-900 border border-neutral-800 text-white" placeholder="Short description" rows={3} />
             </div>
-
             <div>
               <label className="text-sm text-neutral-300">Share with (emails, comma separated)</label>
               <input value={collaboratorEmails} onChange={(e) => setCollaboratorEmails(e.target.value)} placeholder="alice@example.com, bob@example.com" className="w-full mt-1 p-3 rounded-lg bg-neutral-900 border border-neutral-800 text-white" />
-              <p className="text-xs text-neutral-500 mt-1">Users added here will be added as collaborators if they exist.</p>
             </div>
-
             {error && <div className="text-sm text-red-400">{error}</div>}
-
             <div className="flex justify-end gap-2">
               <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-neutral-800 text-white">Cancel</button>
               <button disabled={creating} type="submit" className="px-4 py-2 rounded-lg bg-blue-600 text-white">{creating ? 'Creating...' : 'Create project'}</button>
@@ -611,10 +513,8 @@ const mapServerProjectToUI = (p) => {
   return (
     <div className="flex h-screen w-full bg-[#0F0F0F] text-neutral-400 font-sans overflow-hidden">
       <Sidebar projects={projects} currentTab={tab} />
-
       <main className="flex-1 flex flex-col h-full overflow-y-auto bg-black">
         <Header searchValue={searchValue} setSearchValue={setSearchValue} user={user} />
-
         <div className="px-8 pb-8">
           <div className="grid grid-cols-4 gap-4 mb-8">
             <QuickAction icon={<Plus size={20} />} label="New Project" onClick={() => setIsModalOpen(true)} />
@@ -622,7 +522,6 @@ const mapServerProjectToUI = (p) => {
             <QuickAction icon={<UserPlus size={20} />} label="New team" to="/teams/new" />
             <QuickAction icon={<Building size={20} />} label="New organization" to="/orgs/new" />
           </div>
-
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-white mb-4">All folders</h2>
             <div className="flex gap-6 border-b border-neutral-800 pb-2 text-sm">
@@ -634,7 +533,6 @@ const mapServerProjectToUI = (p) => {
               <Tab label="Archived" value="archived" active={tab === 'archived'} />
             </div>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((p) => (
               <ProjectCard key={p.id} project={p} activeMenuId={activeMenuId} toggleMenu={toggleMenu} />
@@ -642,7 +540,6 @@ const mapServerProjectToUI = (p) => {
           </div>
         </div>
       </main>
-
       <NewProjectModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
