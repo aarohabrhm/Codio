@@ -17,7 +17,6 @@ import {
   Monitor,
   Check,
 } from "lucide-react";
-import { Sidebar } from "../components/common";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -258,9 +257,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex h-screen w-full bg-[#0a0a0a] text-gray-200">
-      {/* Left Activity Bar */}
-      <Sidebar activePage="settings" />
-
+      
       {/* Settings Sidebar */}
       <div className="w-64 bg-[#0f0f0f] border-r border-[#1a1a1a] flex flex-col">
         {/* Search */}

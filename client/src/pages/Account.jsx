@@ -20,9 +20,7 @@ export default function Account() {
 
   return (
     <div className="flex h-screen w-full bg-[#0a0a0a] text-gray-200">
-      {/* Left Activity Bar */}
-      <Sidebar />
-
+      
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
         {/* Tab Bar */}
