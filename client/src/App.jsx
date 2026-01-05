@@ -26,7 +26,7 @@ function App() {
         <Route path="/" element={<Hero/>} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/editor" element={<Editor />} />
+        <Route path="/editor/:projectId" element={<Editor />} />
         <Route path="/account" element={<Account />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/otp-verify" element={<OTPVerification />} />

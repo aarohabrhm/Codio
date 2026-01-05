@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import { X, MessageCircle, Undo2, Redo2, Play } from "lucide-react";
+import { useParams } from "react-router-dom"; // Import useParams
+import axios from "axios"; // Import axios
+
 
 // Components
 import { Sidebar } from "../components/common";
@@ -13,10 +16,17 @@ import { useFileManager } from "../components/EditorPage/hooks";
 import { INITIAL_FILES, DEFAULT_OPEN_FILES } from "../components/EditorPage/data";
 
 export default function Editor() {
+  const { projectId } = useParams(); // Get ID from URL
+  const [loading, setLoading] = useState(true);
+  const [projectData, setProjectData] = useState(null);
+
+
   // File management with custom hook
   const {
     files,
+    setFiles,
     openFiles,
+    setOpenFiles,
     activeFileId,
     activeFile,
     modifiedFiles,
@@ -50,6 +60,40 @@ export default function Editor() {
   // Chat state
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
+  useEffect(() => {
+    const fetchProject = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const res = await axios.get(`http://localhost:8000/api/projects/${projectId}`, {
+           headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        setProjectData(res.data);
+        
+        // Load the files from the backend into the file manager
+        if (res.data.files && Object.keys(res.data.files).length > 0) {
+            setFiles(res.data.files);
+            // Optionally open the first file found (e.g., main.js)
+            const firstFile = Object.values(res.data.files).find(f => f.type === 'file');
+            if(firstFile) {
+                setOpenFiles([firstFile.id]);
+                setActiveFileId(firstFile.id);
+            }
+        }
+      } catch (err) {
+        console.error("Failed to load project", err);
+        setConsoleOutput(prev => [...prev, "Error: Failed to load project files."]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (projectId) {
+        fetchProject();
+    }
+  }, [projectId, setFiles, setOpenFiles, setActiveFileId]);
+  
+
 
   // Handle tab close with event propagation stop
   const handleCloseTab = (e, id) => {
@@ -58,12 +102,27 @@ export default function Editor() {
   };
 
   // Handle save
-  const handleSave = useCallback(() => {
-    const fileName = saveFile();
-    if (fileName) {
-      setConsoleOutput((prev) => [...prev, `Saved ${fileName}`]);
+  // Handle save (Updated to persist to backend)
+  const handleSave = useCallback(async () => {
+    // 1. Local save (updates state in hook)
+    const fileName = saveFile(); 
+    
+    // 2. Persist to Backend
+    if (projectId && files) {
+        try {
+            const token = localStorage.getItem('accessToken');
+            await axios.put(`http://localhost:8000/api/projects/${projectId}`, 
+                { files: files }, // Send the entire file structure
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (fileName) {
+                setConsoleOutput((prev) => [...prev, `Saved ${fileName} to cloud.`]);
+            }
+        } catch (err) {
+             setConsoleOutput((prev) => [...prev, `Error saving to cloud.`]);
+        }
     }
-  }, [saveFile]);
+  }, [saveFile, projectId, files]);
 
   // Terminal execute
   const onTerminalExecute = () => {
@@ -151,6 +210,14 @@ export default function Editor() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleSave]);
+
+  if (loading) {
+      return (
+          <div className="h-screen w-full bg-[#0a0a0a] flex items-center justify-center text-gray-400">
+              <Loader2 className="animate-spin mr-2" /> Loading Project Environment...
+          </div>
+      )
+  }
 
   return (
     <div className="flex h-screen w-full bg-[#0a0a0a] text-gray-200">

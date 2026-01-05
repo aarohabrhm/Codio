@@ -8,6 +8,12 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const DEFAULT_FILES = {
+  root: { id: "root", name: "root", type: "folder", isOpen: true, children: ["main.js", "readme.md"] },
+  "main.js": { id: "main.js", name: "main.js", type: "file", parent: "root", content: "// Welcome to your new project!\nconsole.log('Hello World');" },
+  "readme.md": { id: "readme.md", name: "README.md", type: "file", parent: "root", content: "# New Project\n\nThis is a sample project." }
+};
+
 const getRandomCoverUrl = (req) => {
   try {
     const coverDir = path.join(__dirname, "../project-covers");
@@ -52,6 +58,7 @@ export const createProject = async (req, res) => {
       image: coverImage,
       collaborators,
       isPublic: collaborators.length === 0 ? false : true,
+      files: DEFAULT_FILES
     });
 
     await newProject.save();
@@ -72,6 +79,7 @@ export const getProjects = async (req, res) => {
     const projects = await Project.find({
       $or: [{ owner: req.user.id }, { collaborators: req.user.id }],
     })
+      .select('-files')
       .populate('owner', 'fullname username avatar email')
       .populate('collaborators', 'fullname username avatar email')
       .sort({ updatedAt: -1 });
@@ -92,7 +100,7 @@ export const getProjectById = async (req, res) => {
 
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
-    // allow owner or collaborators to view
+    // Auth check
     const isOwner = project.owner && project.owner._id && project.owner._id.equals
       ? project.owner._id.equals(req.user.id)
       : String(project.owner) === String(req.user.id);

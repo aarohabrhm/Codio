@@ -1,3 +1,4 @@
+// models/project.js
 import mongoose from "mongoose";
 
 const projectSchema = new mongoose.Schema({
@@ -6,8 +7,8 @@ const projectSchema = new mongoose.Schema({
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     collaborators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     image: { type: String, default: "" }, 
-    
     isPublic: { type: Boolean, default: false },
+    files: { type: Object, default: {} } 
 }, { timestamps: true });
 
 export default mongoose.model("Project", projectSchema);
