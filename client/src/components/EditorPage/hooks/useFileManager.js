@@ -10,14 +10,14 @@ export function useFileManager(initialFiles, initialOpenFiles = []) {
 
   // Initialize original contents
   useEffect(() => {
-    const contents = {};
-    Object.keys(files).forEach((id) => {
-      if (files[id].type === "file") {
-        contents[id] = files[id].content;
-      }
-    });
-    setOriginalContents(contents);
-  }, []);
+  const contents = {};
+  Object.keys(files).forEach((id) => {
+    if (files[id].type === "file") {
+      contents[id] = files[id].content;
+    }
+  });
+  setOriginalContents(contents);
+}, [files]);
 
   const activeFile = activeFileId ? files[activeFileId] : null;
 
@@ -153,35 +153,40 @@ func main() {
 
   // Create a new file or folder
   const createNode = useCallback((parentId, name, type) => {
-    const newId = `node-${untitledCounter.current++}`;
-    const content = type === "file" ? getFileTemplate(name) : undefined;
-    const newNode = {
-      id: newId,
-      name,
-      type,
-      parent: parentId,
-      ...(type === "folder" ? { children: [], isOpen: true } : { content }),
-    };
+  const newId = crypto.randomUUID();
 
-    setFiles((prev) => {
-      const updated = { ...prev, [newId]: newNode };
-      const parent = prev[parentId];
-      if (parent) {
-        updated[parentId] = {
-          ...parent,
-          children: [...(parent.children || []), newId],
-          isOpen: true,
-        };
-      }
-      return updated;
-    });
+  const content = type === "file" ? getFileTemplate(name) : undefined;
 
-    if (type === "file") {
-      setOpenFiles((prev) => [...prev, newId]);
-      setActiveFileId(newId);
-      setOriginalContents((prev) => ({ ...prev, [newId]: content }));
+  const newNode = {
+    id: newId,
+    name,
+    type,
+    parent: parentId,
+    ...(type === "folder"
+      ? { children: [], isOpen: true }
+      : { content }),
+  };
+
+  setFiles((prev) => {
+    const updated = { ...prev, [newId]: newNode };
+    const parent = prev[parentId];
+    if (parent) {
+      updated[parentId] = {
+        ...parent,
+        children: [...(parent.children || []), newId],
+        isOpen: true,
+      };
     }
-  }, []);
+    return updated;
+  });
+
+  if (type === "file") {
+    setOpenFiles((prev) => [...prev, newId]);
+    setActiveFileId(newId);
+    setOriginalContents((prev) => ({ ...prev, [newId]: content }));
+  }
+}, []);
+
 
   // Rename a file or folder
   const renameNode = useCallback((id, newName) => {
@@ -260,6 +265,7 @@ func main() {
 
   return {
     files,
+    setFiles,
     openFiles,
     activeFileId,
     activeFile,

@@ -8,6 +8,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import projectsRouter from './routes/projects.js';
 
+
+
+import projectRoutes from "./routes/projectRoutes.js";
+
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -23,7 +29,7 @@ const PORT=8000
 
 app.use(cors());
 app.use(express.json());
-
+app.use("/api/projects", projectRoutes);
 app.use('/avatar', express.static(path.join(__dirname, 'avatar')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/',(req,res)=>{
