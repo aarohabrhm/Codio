@@ -7,9 +7,8 @@ import authRoutes from './routes/auth.js'
 import path from 'path'; 
 import { fileURLToPath } from 'url';
 import projectsRouter from './routes/projects.js';
-
-
-
+import { setupWebSocket } from './websocket/collaborationServer.js';
+import http from 'http';
 import projectRoutes from "./routes/projectRoutes.js";
 
 
@@ -25,8 +24,12 @@ mongoose.connect(mongoURI,{
 const app = express();
 
 const PORT=8000
-
-
+const server = http.createServer(app);
+app.use(cors({
+  origin: 'http://localhost:5173', // Your frontend URL
+  credentials: true
+}));
+app.use(express.urlencoded({ extended: true }))
 app.use(cors());
 app.use(express.json());
 app.use("/api/projects", projectRoutes);
@@ -37,12 +40,15 @@ app.get('/',(req,res)=>{
 });
 app.use('/project-covers', express.static(path.join(__dirname, 'project-covers')));
 
-
+setupWebSocket(server);
 app.use('/',router);
 app.use('/api/auth',authRoutes)
 app.use('/api/projects', projectsRouter);
 
-
-app.listen(PORT, () => {
+server.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`WebSocket server ready at ws://localhost:${PORT}/ws/collab`);
+});
+/*app.listen(PORT, () => {
     console.log(`http://localhost:${PORT}\n`);
-})
+})*/

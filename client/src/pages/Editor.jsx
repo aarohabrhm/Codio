@@ -1,18 +1,21 @@
 import React, { useCallback, useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom"; // 1. Import useParams
+import { useParams } from "react-router-dom";
 import { X, MessageCircle, Undo2, Redo2, Play, Loader2 } from "lucide-react";
-import axios from "axios"; // 2. Import Axios
+import axios from "axios";
 
-// Components (Keep existing imports)
+// Components
 import { Sidebar } from "../components/common";
 import LeftPanel from "../components/EditorPage/LeftPanel";
 import CodeEditor from "../components/EditorPage/editor/CodeEditor";
 import BottomPanel from "../components/EditorPage/BottomPanel";
 import RightChatPanel from "../components/EditorPage/RightChatPanel";
+import OnlineUsers from "../components/EditorPage/OnlineUsers";
+import CursorOverlay from "../components/EditorPage/CursorOverlay";
 
-// Hooks and Data
+// Hooks
 import { useFileManager } from "../components/EditorPage/hooks";
-// Structural root folder (NOT demo data)
+import { useCollaboration } from "../components/EditorPage/hooks/useCollaboration";
+
 const EMPTY_PROJECT_FILES = {
   root: {
     id: "root",
@@ -24,16 +27,15 @@ const EMPTY_PROJECT_FILES = {
   },
 };
 
-
 export default function Editor() {
-  const { projectId } = useParams(); // Get Project ID from URL
+  const { projectId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   // File management
   const {
     files,
-    setFiles, // Ensure this is exported from your hook
+    setFiles,
     openFiles,
     activeFileId,
     activeFile,
@@ -47,14 +49,24 @@ export default function Editor() {
     renameNode,
     deleteNode,
     updateContent,
-    saveFile, // This saves to local state
+    saveFile,
   } = useFileManager(EMPTY_PROJECT_FILES, []);
 
+  // Collaboration
+  const {
+    isConnected,
+    onlineUsers,
+    userCursors,
+    myColor,
+    sendCursor,
+    sendCodeChange,
+    sendFileSelect
+  } = useCollaboration(projectId);
 
   const editorRef = useRef(null);
+  const saveRef = useRef(null);
 
   // UI State
-  
   const [activeLeftTab, setActiveLeftTab] = useState("files");
   const [searchQuery, setSearchQuery] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
@@ -66,100 +78,140 @@ export default function Editor() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
 
-  // --- 1. FETCH DATA ON LOAD ---
+  // Fetch project data
   useEffect(() => {
-  const fetchProject = async () => {
+    const fetchProject = async () => {
+      if (!projectId) return;
+
+      try {
+        setIsLoading(true);
+
+        const res = await axios.get(
+          `http://localhost:8000/api/projects/${projectId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+            }
+          }
+        );
+
+        if (res.data?.files) {
+          setFiles(res.data.files);
+
+          const firstFile = Object.values(res.data.files)
+            .find(f => f.type === "file");
+
+          if (firstFile) {
+            setActiveFileId(firstFile.id);
+          }
+        }
+
+      } catch (err) {
+        console.error(err);
+        setConsoleOutput(prev => [
+          ...prev,
+          "Error: Failed to load project from backend"
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProject();
+  }, [projectId]);
+
+  // Handle save
+  const handleSave = useCallback(async () => {
     if (!projectId) return;
 
+    setIsSaving(true);
+
     try {
-      setIsLoading(true);
+      let updatedFiles = { ...files };
 
-      const res = await axios.get(
-        `http://localhost:8000/api/projects/${projectId}`
-      );
-
-      if (res.data?.files) {
-        setFiles(res.data.files);
-
-        // Open first file automatically
-        const firstFile = Object.values(res.data.files)
-          .find(f => f.type === "file");
-
-        if (firstFile) {
-          setActiveFileId(firstFile.id);
-        }
+      if (activeFileId && editorRef.current) {
+        updatedFiles[activeFileId] = {
+          ...updatedFiles[activeFileId],
+          content: editorRef.current.getContent(),
+        };
       }
+
+      await axios.put(`http://localhost:8000/api/projects/${projectId}`, {
+        files: updatedFiles,
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+
+      setFiles(updatedFiles);
+      saveFile();
+
+      setConsoleOutput(prev => [...prev, "✅ Project saved successfully"]);
 
     } catch (err) {
       console.error(err);
-      setConsoleOutput(prev => [
-        ...prev,
-        "Error: Failed to load project from backend"
-      ]);
+      setConsoleOutput(prev => [...prev, "❌ Error: Save failed"]);
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
+  }, [files, activeFileId, projectId]);
+
+  useEffect(() => {
+    saveRef.current = handleSave;
+  }, [handleSave]);
+
+  // Handle cursor movement
+  const handleCursorChange = useCallback((line, column) => {
+    if (activeFileId) {
+      sendCursor(line, column, activeFileId);
+    }
+  }, [activeFileId, sendCursor]);
+
+  // Handle content change
+  const handleContentChange = useCallback((content) => {
+    updateContent(content);
+    
+    // Optionally send changes to other users
+    // sendCodeChange(activeFileId, content);
+  }, [updateContent, activeFileId, sendCodeChange]);
+
+  // Notify when file is opened
+  useEffect(() => {
+    if (activeFileId) {
+      sendFileSelect(activeFileId);
+    }
+  }, [activeFileId, sendFileSelect]);
+
+  // UI Helper functions
+  const handleCloseTab = (e, id) => { 
+    e.stopPropagation(); 
+    closeTab(id); 
   };
-
-  fetchProject();
-}, [projectId]);
-
-
-const saveRef = useRef(null);
-
-
-
-  // --- 2. HANDLE SAVE (Local + Database) ---
-  const handleSave = useCallback(async () => {
-  if (!projectId) return;
-
-  setIsSaving(true);
-
-  try {
-    let updatedFiles = { ...files };
-
-    if (activeFileId && editorRef.current) {
-      updatedFiles[activeFileId] = {
-        ...updatedFiles[activeFileId],
-        content: editorRef.current.getContent(),
-      };
-    }
-
-    await axios.put("http://localhost:8000/api/projects/save", {
-      projectId,
-      files: updatedFiles,
-    });
-
-    // Sync local state after backend success
-    setFiles(updatedFiles);
-    saveFile();
-
-    setConsoleOutput(prev => [...prev, "Project saved successfully"]);
-
-  } catch (err) {
-    console.error(err);
-    setConsoleOutput(prev => [...prev, "Error: Save failed"]);
-  } finally {
-    setIsSaving(false);
-  }
-}, [files, activeFileId, projectId]);
-
-useEffect(() => {
-  saveRef.current = handleSave;
-}, [handleSave]);
-  // UI Helper functions (Keep these exactly as they were)
-  const handleCloseTab = (e, id) => { e.stopPropagation(); closeTab(id); };
+  
   const handleUndo = () => editorRef.current?.undo();
   const handleRedo = () => editorRef.current?.redo();
-  const onTerminalExecute = () => { /* ... keep existing logic ... */ };
-  const onChatSend = () => { /* ... keep existing logic ... */ };
   
-  // Run Code logic (Simplified for brevity, keep your full version)
+  const onTerminalExecute = () => {
+    if (!terminalInput.trim()) return;
+    setTerminalOutput(prev => [...prev, `> ${terminalInput}`, "Command executed"]);
+    setTerminalInput("");
+  };
+  
+  const onChatSend = () => {
+    if (!chatInput.trim()) return;
+    setChatMessages(prev => [
+      ...prev,
+      { role: "user", text: chatInput },
+      { role: "assistant", text: "I'm here to help! (Demo response)" }
+    ]);
+    setChatInput("");
+  };
+
   const handleRunCode = useCallback(() => {
     if (!activeFile) return;
-    setConsoleOutput(prev => [...prev, `Running ${activeFile.name}...`]);
-    // ... your existing run logic ...
-    setActiveBottomTab('console');
+    setConsoleOutput(prev => [...prev, `🚀 Running ${activeFile.name}...`]);
+    setActiveBottomTab('output');
   }, [activeFile]);
 
   // Ctrl+S Listener
@@ -174,7 +226,6 @@ useEffect(() => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleSave]);
 
-  // LOADING SCREEN
   if (isLoading) {
     return (
       <div className="h-screen w-full bg-[#0a0a0a] flex flex-col items-center justify-center text-gray-400 gap-4">
@@ -206,21 +257,63 @@ useEffect(() => {
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top Toolbar */}
         <div className="h-10 bg-[#0a0a0a] border-b border-[#1a1a1a] flex items-center justify-between px-4">
-           {/* Add a small status indicator */}
-           <div className="text-xs text-gray-500 flex items-center gap-2">
-              {isSaving ? <span className="text-blue-400 flex items-center gap-1"><Loader2 size={10} className="animate-spin"/> Saving...</span> : "Ready"}
-           </div>
+          {/* Left: Status & Save */}
+          <div className="flex items-center gap-4">
+            <div className="text-xs text-gray-500 flex items-center gap-2">
+              {isSaving ? (
+                <span className="text-blue-400 flex items-center gap-1">
+                  <Loader2 size={10} className="animate-spin"/> Saving...
+                </span>
+              ) : "Ready"}
+            </div>
 
-           <div className="flex items-center gap-1">
-             <button onClick={handleUndo} className="p-1.5 text-gray-400 hover:text-white rounded"><Undo2 size={16}/></button>
-             <button onClick={handleRedo} className="p-1.5 text-gray-400 hover:text-white rounded"><Redo2 size={16}/></button>
-             <div className="w-px h-5 bg-[#2a2a2a] mx-2" />
-             <button onClick={handleRunCode} disabled={!activeFile} className="px-3 py-1 text-xs text-white bg-emerald-600 rounded flex items-center gap-1.5"><Play size={12}/> Run</button>
-           </div>
+            <div className="w-px h-5 bg-[#2a2a2a]" />
+
+            {/* Online Users */}
+            <OnlineUsers 
+              onlineUsers={onlineUsers}
+              isConnected={isConnected}
+              myColor={myColor}
+            />
+          </div>
+
+          {/* Center: Editor Actions */}
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={handleUndo} 
+              className="p-1.5 text-gray-400 hover:text-white rounded"
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 size={16}/>
+            </button>
+            <button 
+              onClick={handleRedo} 
+              className="p-1.5 text-gray-400 hover:text-white rounded"
+              title="Redo (Ctrl+Y)"
+            >
+              <Redo2 size={16}/>
+            </button>
+            <div className="w-px h-5 bg-[#2a2a2a] mx-2" />
+            <button 
+              onClick={handleRunCode} 
+              disabled={!activeFile} 
+              className="px-3 py-1 text-xs text-white bg-emerald-600 rounded flex items-center gap-1.5 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Play size={12}/> Run
+            </button>
+          </div>
            
-           <div className="flex items-center gap-2">
-             {!chatOpen && <button onClick={() => setChatOpen(true)} className="px-3 py-1.5 text-xs bg-[#1a1a1a] rounded-lg flex gap-2"><MessageCircle size={14}/> Chat</button>}
-           </div>
+          {/* Right: Chat */}
+          <div className="flex items-center gap-2">
+            {!chatOpen && (
+              <button 
+                onClick={() => setChatOpen(true)} 
+                className="px-3 py-1.5 text-xs bg-[#1a1a1a] rounded-lg flex gap-2 hover:bg-[#2a2a2a]"
+              >
+                <MessageCircle size={14}/> Chat
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tab Bar */}
@@ -230,10 +323,23 @@ useEffect(() => {
               const file = files[id];
               const isModified = modifiedFiles.includes(id);
               return (
-                <div key={id} onClick={() => setActiveFileId(id)} className={`group flex items-center gap-2 px-4 py-2 cursor-pointer border-r border-[#1a1a1a] ${activeFileId === id ? "bg-[#0a0a0a] text-white" : "bg-[#0f0f0f] text-gray-500"}`}>
+                <div 
+                  key={id} 
+                  onClick={() => setActiveFileId(id)} 
+                  className={`group flex items-center gap-2 px-4 py-2 cursor-pointer border-r border-[#1a1a1a] ${
+                    activeFileId === id 
+                      ? "bg-[#0a0a0a] text-white" 
+                      : "bg-[#0f0f0f] text-gray-500 hover:bg-[#1a1a1a]"
+                  }`}
+                >
                   {isModified && <span className="w-2 h-2 rounded-full bg-yellow-400" />}
                   <span className="text-sm">{file?.name}</span>
-                  <button onClick={(e) => handleCloseTab(e, id)} className="opacity-0 group-hover:opacity-100 hover:bg-[#2a2a2a] p-0.5 rounded"><X size={12} /></button>
+                  <button 
+                    onClick={(e) => handleCloseTab(e, id)} 
+                    className="opacity-0 group-hover:opacity-100 hover:bg-[#2a2a2a] p-0.5 rounded"
+                  >
+                    <X size={12} />
+                  </button>
                 </div>
               );
             })}
@@ -241,15 +347,22 @@ useEffect(() => {
         </div>
 
         {/* Editor */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden relative">
           <div className="flex-1 bg-[#0a0a0a]">
             <CodeEditor
-  ref={editorRef}
-  file={activeFile}
-  onChange={updateContent}
-  onSave={() => saveRef.current?.()}
-/>
-
+              ref={editorRef}
+              file={activeFile}
+              onChange={handleContentChange}
+              onCursorChange={handleCursorChange}
+              onSave={() => saveRef.current?.()}
+            />
+            
+            {/* Cursor Overlays */}
+            <CursorOverlay 
+              userCursors={userCursors}
+              activeFileId={activeFileId}
+              onlineUsers={onlineUsers}
+            />
           </div>
         </div>
 
@@ -262,7 +375,11 @@ useEffect(() => {
           setTerminalInput={setTerminalInput}
           problems={problems}
           onTerminalExecute={onTerminalExecute}
-          onClearAll={() => { setConsoleOutput([]); setTerminalOutput([]); setProblems([]); }}
+          onClearAll={() => { 
+            setConsoleOutput([]); 
+            setTerminalOutput([]); 
+            setProblems([]); 
+          }}
           files={files}
         />
       </main>
