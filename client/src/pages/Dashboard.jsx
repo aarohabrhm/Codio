@@ -5,7 +5,7 @@ import axios from 'axios';
 import {
   Search, Home, LayoutGrid, Folder, Settings, HelpCircle,
   Plus, Palette, UserPlus, Building, MoreVertical,
-  Link as LinkIcon, Share2, Shield, Bell, FolderGit2,
+  Link as LinkIcon, Share2, Shield, Bell, FolderGit2, LogOut,
 } from 'lucide-react';
 
 const SAMPLE_PROJECTS = []; // Empty default, will load from API
@@ -112,15 +112,27 @@ const Sidebar = ({ projects, currentTab }) => {
 };
 
 // --- Header Component ---
-const Header = ({ searchValue, setSearchValue, user }) => {
+const Header = ({ searchValue, setSearchValue, user, onLogoutClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const q = params.get('q') || '';
     setSearchValue(q);
   }, [location.search, setSearchValue]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const onSubmit = (e) => {
     e.preventDefault();
@@ -161,7 +173,48 @@ const Header = ({ searchValue, setSearchValue, user }) => {
             {user ? user.fullname : 'Loading...'}
           </span>
           <Bell size={18} className="cursor-pointer hover:text-white" />
-          <MoreVertical size={18} className="cursor-pointer hover:text-white" />
+          
+          {/* Three Dots Menu */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="cursor-pointer hover:text-white transition"
+            >
+              <MoreVertical size={18} />
+            </button>
+
+            {isMenuOpen && (
+              <div className="absolute top-8 right-0 w-48 bg-[#1A1A1A] border border-neutral-700 rounded-lg shadow-2xl z-50 flex flex-col py-1 text-sm">
+                <Link
+                  to="/settings"
+                  className="flex items-center gap-3 px-4 py-2.5 text-neutral-400 hover:bg-neutral-800 hover:text-white transition"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Settings size={16} />
+                  <span>Settings</span>
+                </Link>
+                <Link
+                  to="/support"
+                  className="flex items-center gap-3 px-4 py-2.5 text-neutral-400 hover:bg-neutral-800 hover:text-white transition"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <HelpCircle size={16} />
+                  <span>Help & Support</span>
+                </Link>
+                <div className="border-t border-neutral-800 my-1"></div>
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onLogoutClick();
+                  }}
+                  className="flex items-center gap-3 px-4 py-2.5 text-red-400 hover:bg-neutral-800 hover:text-red-300 transition text-left w-full"
+                >
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
@@ -243,7 +296,6 @@ const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
   return (
     <div
       className="group relative bg-[#161616] rounded-xl p-3 border border-neutral-800 hover:border-neutral-700 transition cursor-pointer"
-      // --- FIX: Navigate to /editor/:id ---
       onClick={() => navigate(`/editor/${project.id}`)}
     >
       <div className="relative h-48 w-full mb-4 overflow-hidden rounded-lg">
@@ -317,6 +369,57 @@ const ProjectCard = ({ project, activeMenuId, toggleMenu }) => {
   );
 };
 
+// --- Logout Confirmation Modal ---
+const LogoutModal = ({ isOpen, onClose, onConfirm, isLoggingOut }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-[420px] bg-[#0B0B0B] p-6 rounded-2xl border border-neutral-800 z-10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-full bg-red-500/10 border border-red-500/20">
+            <LogOut size={24} className="text-red-500" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Logout</h3>
+        </div>
+        
+        <p className="text-neutral-400 mb-6">
+          Are you sure you want to logout? You'll need to sign in again to access your projects.
+        </p>
+
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoggingOut}
+            className="px-5 py-2.5 rounded-lg bg-neutral-800 text-white hover:bg-neutral-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isLoggingOut}
+            className="px-5 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isLoggingOut ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <span>Logging out...</span>
+              </>
+            ) : (
+              <>
+                <LogOut size={16} />
+                <span>Logout</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Dashboard Component ---
 export default function Dashboard() {
   const openProject = (projectId) => {
@@ -329,6 +432,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -439,6 +544,21 @@ export default function Dashboard() {
 
   const toggleMenu = (id) => setActiveMenuId((s) => (s === id ? null : id));
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    
+    // Simulate logout delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Clear all auth data
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('rememberMe');
+    
+    // Redirect to login
+    navigate('/login');
+  };
+
   if (loading) {
     return <div className="h-screen w-full bg-[#0F0F0F] flex items-center justify-center text-white">Loading...</div>;
   }
@@ -514,7 +634,12 @@ export default function Dashboard() {
     <div className="flex h-screen w-full bg-[#0F0F0F] text-neutral-400 font-sans overflow-hidden">
       <Sidebar projects={projects} currentTab={tab} />
       <main className="flex-1 flex flex-col h-full overflow-y-auto bg-black">
-        <Header searchValue={searchValue} setSearchValue={setSearchValue} user={user} />
+        <Header 
+          searchValue={searchValue} 
+          setSearchValue={setSearchValue} 
+          user={user}
+          onLogoutClick={() => setIsLogoutModalOpen(true)}
+        />
         <div className="px-8 pb-8">
           <div className="grid grid-cols-4 gap-4 mb-8">
             <QuickAction icon={<Plus size={20} />} label="New Project" onClick={() => setIsModalOpen(true)} />
@@ -541,6 +666,12 @@ export default function Dashboard() {
         </div>
       </main>
       <NewProjectModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <LogoutModal 
+        isOpen={isLogoutModalOpen} 
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        isLoggingOut={isLoggingOut}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, IdCard, Key } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -28,6 +29,32 @@ export default function Login() {
     username: '',
     fullname: ''
   });
+
+  // Check if user is already logged in on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        try {
+          // Verify token is still valid
+          const response = await axios.get('http://localhost:8000/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (response.data) {
+            // User is authenticated, redirect to dashboard
+            navigate('/dashboard');
+          }
+        } catch (err) {
+          // Token is invalid or expired, clear it
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+        }
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
 
   const handleInputChange = (e) => {
     if (error) setError('');
@@ -48,7 +75,7 @@ export default function Login() {
 
     try {
       const payload = isLogin
-        ? { email: formData.email, password: formData.password }
+        ? { email: formData.email, password: formData.password, rememberMe } // Added rememberMe
         : { 
             fullname: formData.fullname,
             username: formData.username,
@@ -62,6 +89,12 @@ export default function Login() {
         localStorage.setItem('accessToken', response.data.accesstoken);
         if (response.data.refreshToken) {
           localStorage.setItem('refreshToken', response.data.refreshToken);
+        }
+        // Store rememberMe preference
+        if (rememberMe) {
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberMe');
         }
         navigate('/dashboard'); 
       } else {
@@ -183,6 +216,8 @@ export default function Login() {
             <label className="flex items-center text-gray-400 cursor-pointer">
               <input 
                 type="checkbox" 
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
                 className="mr-2 w-4 h-4 rounded bg-[#141414] border-gray-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0" 
               />
               Remember me

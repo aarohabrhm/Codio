@@ -141,17 +141,35 @@ export const verifyOtp = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, rememberMe } = req.body; // Added rememberMe
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: "User not found" });
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-        const accesstoken = jwt.sign({ id: user._id, username: user.username }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
-        const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+        // Set token expiry based on rememberMe
+        const accessTokenExpiry = rememberMe ? '7d' : '15m';
+        const refreshTokenExpiry = rememberMe ? '30d' : '7d';
 
-        res.status(200).json({ message: "Login successful", accesstoken, refreshToken });
+        const accesstoken = jwt.sign(
+            { id: user._id, username: user.username }, 
+            process.env.ACCESS_TOKEN_SECRET, 
+            { expiresIn: accessTokenExpiry }
+        );
+        
+        const refreshToken = jwt.sign(
+            { id: user._id }, 
+            process.env.JWT_REFRESH_TOKEN_SECRET, 
+            { expiresIn: refreshTokenExpiry }
+        );
+
+        res.status(200).json({ 
+            message: "Login successful", 
+            accesstoken, 
+            refreshToken,
+            rememberMe // Send back to frontend
+        });
     } catch (error) {
         console.error("Login Error:", error);
         res.status(500).json({ message: "Server error" });
