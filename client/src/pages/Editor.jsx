@@ -26,6 +26,22 @@ const EMPTY_PROJECT_FILES = {
     isOpen: true,
   },
 };
+// Helper to map file extensions to backend languages
+const getLanguageFromExtension = (filename) => {
+  const ext = filename.split('.').pop().toLowerCase();
+  const map = {
+    js: 'javascript',
+    jsx: 'javascript',
+    py: 'python',
+    c: 'c',
+    cpp: 'cpp',
+    // Add these if you add Docker images for them later:
+    // java: 'java',
+    // go: 'go', 
+    // rs: 'rust'
+  };
+  return map[ext] || 'plaintext';
+};
 
 export default function Editor() {
   const { projectId } = useParams();
@@ -208,11 +224,71 @@ export default function Editor() {
     setChatInput("");
   };
 
-  const handleRunCode = useCallback(() => {
-    if (!activeFile) return;
-    setConsoleOutput(prev => [...prev, `🚀 Running ${activeFile.name}...`]);
-    setActiveBottomTab('output');
-  }, [activeFile]);
+  const handleRunCode = useCallback(async () => {
+  if (!activeFile || !editorRef.current) return;
+
+  // 1. Detect language
+  const language = getLanguageFromExtension(activeFile.name);
+  if (language === "plaintext") {
+    setConsoleOutput(["❌ Error: This file type cannot be executed."]);
+    setActiveBottomTab("console");
+    return;
+  }
+
+  // 2. UI reset
+  setConsoleOutput([]);
+  setTerminalOutput([`> Running ${activeFile.name} (${language})...`]);
+  setActiveBottomTab("console");
+
+  try {
+    if (!editorRef.current) return;
+    // 3. Always trust editor content
+    const sourceCode = editorRef.current.getContent();
+
+    const res = await axios.post(
+      "http://localhost:8000/api/execute",
+      { language, sourceCode },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      }
+    );
+
+    const { run } = res.data;
+
+    // 4. ACCUMULATE OUTPUT ONCE (FIX 3)
+    const outputLines = [];
+
+    if (run.stdout?.trim()) {
+      outputLines.push(...run.stdout.split("\n"));
+    }
+
+    if (run.stderr?.trim()) {
+      outputLines.push(
+        ...run.stderr.split("\n").map((l) => `⚠️ ${l}`)
+      );
+    }
+
+    if (outputLines.length === 0) {
+      outputLines.push("✔ Program finished with no output.");
+    }
+
+    // ✅ SINGLE STATE UPDATE
+    setConsoleOutput(outputLines);
+
+    setTerminalOutput((prev) => [
+      ...prev,
+      `> Process exited with code ${run.code}`,
+    ]);
+  } catch (err) {
+    const errorMessage =
+      err.response?.data?.message || err.message;
+
+    setConsoleOutput([`❌ Execution Failed: ${errorMessage}`]);
+  }
+}, [activeFile]);
+
 
   // Ctrl+S Listener
   useEffect(() => {
