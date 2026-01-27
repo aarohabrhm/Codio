@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 export function useCollaboration(projectId) {
+  const [teamMessages, setTeamMessages] = useState([]);
+const [typingUsers, setTypingUsers] = useState([]);
+
   const wsRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -28,16 +31,20 @@ export function useCollaboration(projectId) {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('✅ WebSocket connected');
-      setIsConnected(true);
+  console.log('✅ WebSocket connected');
+  setIsConnected(true);
 
-      // Send join message
-      ws.send(JSON.stringify({
-        type: 'join',
-        projectId,
-        token
-      }));
-    };
+  const decoded = JSON.parse(atob(token.split('.')[1]));
+  ws.userId = decoded.id;        // ✅ store userId on socket
+  wsRef.current.userId = decoded.id;
+
+  ws.send(JSON.stringify({
+    type: 'join',
+    projectId,
+    token
+  }));
+};
+
 
     ws.onmessage = (event) => {
       try {
@@ -51,9 +58,11 @@ export function useCollaboration(projectId) {
             break;
 
           case 'user-joined':
-            // Add new user (Deduping check to be safe)
+            // ✅ FIX 4: Safety Check - If the joined user is ME, ignore it.
+            // (I already know I'm here, and I got the full list via 'users' event)
+            if (message.user.userId === wsRef.current?.userId) return;
+
             setOnlineUsers(prev => {
-                // If user already exists in list, don't add again
                 if (prev.some(u => u.userId === message.user.userId)) return prev;
                 return [...prev, message.user];
             });
@@ -69,6 +78,34 @@ export function useCollaboration(projectId) {
               return next;
             });
             break;
+
+    
+          case 'CHAT_MESSAGE':
+  setTeamMessages(prev => [...prev, message.payload]);
+
+  // ✅ Remove sender from typing list
+  setTypingUsers(prev =>
+    prev.filter(u => u !== message.payload.senderUsername)
+  );
+  break;
+
+
+          case 'CHAT_TYPING': {
+            const { username, typing, userId } = message.payload;
+
+            if (userId === wsRef.current?.userId) return;
+
+            setTypingUsers(prev => {
+            if (typing) {
+              return [...new Set([...prev, username])];
+            }
+            return prev.filter(u => u !== username);
+            });
+            break;
+          }
+
+
+
 
           case 'cursor':
             // Update specific user's cursor
@@ -122,6 +159,32 @@ export function useCollaboration(projectId) {
 
   // --- SEND FUNCTIONS ---
 
+  const sendChatTyping = useCallback((typing) => {
+  if (wsRef.current?.readyState === WebSocket.OPEN) {
+    wsRef.current.send(JSON.stringify({
+      type: "CHAT_TYPING",
+      payload: { typing }
+    }));
+  }
+}, []);
+
+
+
+
+
+
+  const sendChatMessage = useCallback((text) => {
+  if (wsRef.current?.readyState === WebSocket.OPEN) {
+    wsRef.current.send(JSON.stringify({
+      type: 'CHAT_MESSAGE',
+      payload: {
+        text
+      }
+    }));
+  }
+}, []);
+
+
   const sendCursor = useCallback((line, column, fileId) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
@@ -174,12 +237,17 @@ export function useCollaboration(projectId) {
   }, [connect]);
 
   return {
-    isConnected,
-    onlineUsers,
-    userCursors,
-    myColor,
-    sendCursor,
-    sendCodeChange,
-    sendFileSelect
-  };
+  isConnected,
+  onlineUsers,
+  userCursors,
+  myColor,
+  teamMessages,
+  typingUsers,
+  sendCursor,
+  sendCodeChange,
+  sendFileSelect,
+  sendChatMessage,
+  sendChatTyping,
+};
+
 }

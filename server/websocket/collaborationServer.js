@@ -2,6 +2,8 @@
 import { WebSocketServer } from 'ws';
 import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
+import ChatMessage from "../models/ChatMessage.js";
+
 
 const projects = new Map(); // Map<projectId, Set<clientInfo>>
 
@@ -125,6 +127,53 @@ export function setupWebSocket(server) {
             fileId: message.fileId
           }, clientInfo);
         }
+        // Handle TEAM CHAT MESSAGE
+else if (message.type === 'CHAT_MESSAGE') {
+  if (!clientInfo) return;
+
+  const { text } = message.payload;
+
+  // Save to DB
+  const savedMessage = await ChatMessage.create({
+    projectId: clientInfo.projectId,
+    sender: clientInfo.userId,
+    senderUsername: clientInfo.username,
+    senderAvatar: clientInfo.avatar,
+    text,
+    mode: "team"
+  });
+
+  // Broadcast to everyone in project (including sender)
+  broadcast(clientInfo.projectId, {
+    type: 'CHAT_MESSAGE',
+    payload: {
+      _id: savedMessage._id,
+      projectId: clientInfo.projectId,
+      senderId: clientInfo.userId,
+      senderUsername: clientInfo.username,
+      senderAvatar: clientInfo.avatar,
+      text: savedMessage.text,
+      createdAt: savedMessage.createdAt
+    }
+  },null);
+}
+
+// Handle CHAT TYPING indicator
+else if (message.type === 'CHAT_TYPING') {
+          if (!clientInfo) return;
+
+          // ✅ FIX 2: Pass 'clientInfo' as sender so only OTHERS see you typing
+          broadcast(clientInfo.projectId, {
+            type: 'CHAT_TYPING',
+            payload: {
+              userId: clientInfo.userId,
+              username: clientInfo.username,
+              typing: message.payload.typing
+            }
+          }, clientInfo);
+        }
+
+
 
       } catch (error) {
         console.error('WebSocket message error:', error);
@@ -170,7 +219,10 @@ function broadcast(projectId, message, sender = null) {
   const messageStr = JSON.stringify(message);
   
   clients.forEach(client => {
-    if (client !== sender && client.ws.readyState === 1) { // 1 = OPEN
+    // ✅ FIX 3: Check if this client is the sender. If so, skip.
+    if (sender && client === sender) return;
+
+    if (client.ws.readyState === 1) { // 1 = OPEN
       client.ws.send(messageStr);
     }
   });

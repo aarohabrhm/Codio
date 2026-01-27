@@ -11,6 +11,7 @@ import { setupWebSocket } from './websocket/collaborationServer.js';
 import http from 'http';
 import projectRoutes from "./routes/projectRoutes.js";
 import executeRouter from './routes/execute.js';
+import chatRoutes from "./routes/chatRoutes.js";
 
 
 
@@ -30,6 +31,8 @@ app.use(cors({
   origin: 'http://localhost:5173', // Your frontend URL
   credentials: true
 }));
+app.use("/api/chat", chatRoutes);
+
 app.use(express.json());
 app.use("/api/execute", executeRouter);
 app.use(express.urlencoded({ extended: true }))

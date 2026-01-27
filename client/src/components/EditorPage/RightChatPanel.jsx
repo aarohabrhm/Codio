@@ -4,12 +4,17 @@ import { X, ChevronRight, MessageCircle, Send, Plus, Sparkles } from "lucide-rea
 export default function RightChatPanel({
   isOpen,
   onToggle,
+  chatMode,
+  setChatMode,
   chatMessages,
   chatInput,
   setChatInput,
   onChatSend,
+  onTyping,
+  typingUsers,
   onClearChat,
 }) {
+
   const messagesEndRef = useRef(null);
   const [selectedModel, setSelectedModel] = useState("GPT-5");
 
@@ -30,9 +35,38 @@ export default function RightChatPanel({
   return (
     <div className="w-96 bg-[#0a0a0a] border-l border-[#1a1a1a] flex flex-col h-full">
       {/* Header */}
+      {/* Chat Mode Toggle */}
+<div className="flex gap-1 bg-[#0f0f0f] rounded-lg p-1">
+  <button
+    onClick={() => setChatMode("ai")}
+    className={`px-3 py-1 text-xs rounded-md transition ${
+      chatMode === "ai"
+        ? "bg-cyan-500/20 text-cyan-400"
+        : "text-gray-500 hover:text-white"
+    }`}
+  >
+    AI
+  </button>
+
+  <button
+    onClick={() => setChatMode("team")}
+    className={`px-3 py-1 text-xs rounded-md transition ${
+      chatMode === "team"
+        ? "bg-emerald-500/20 text-emerald-400"
+        : "text-gray-500 hover:text-white"
+    }`}
+  >
+    Team
+  </button>
+</div>
+
+
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a]">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-white">New chat</span>
+          <span className="text-sm font-medium text-white">
+  {chatMode === "ai" ? "AI Assistant" : "Team Chat"}
+</span>
+
           <X size={14} className="text-gray-500" />
         </div>
         <div className="flex items-center gap-2">
@@ -62,8 +96,15 @@ export default function RightChatPanel({
           chatMessages.map((m, i) => (
             <div key={i} className="flex flex-col gap-1">
               <div className="text-[11px] font-medium text-gray-500">
-                {m.role === "assistant" ? "Codio AI" : "You"}
-              </div>
+  {chatMode === "ai"
+    ? m.role === "assistant"
+      ? "AI"
+      : "You"
+    : m.senderUsername}
+</div>
+
+
+
               <div
                 className={`text-sm leading-relaxed rounded-lg px-3 py-2 max-w-full whitespace-pre-wrap ${
                   m.role === "assistant"
@@ -80,13 +121,23 @@ export default function RightChatPanel({
       </div>
 
       {/* Input Area */}
+      {typingUsers.length > 0 && chatMode === "team" && (
+  <div className="px-4 pb-2 text-xs text-gray-400 italic">
+    {typingUsers.join(", ")} typing...
+  </div>
+)}
+
       <div className="border-t border-[#1a1a1a] p-4">
         <div className="bg-[#0f0f0f] rounded-xl border border-[#1a1a1a] overflow-hidden">
           
           <div className="px-4 py-3">
             <textarea
               value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
+              onChange={(e) => {
+  setChatInput(e.target.value);
+  onTyping();
+}}
+
               placeholder="Plan, search, build anything..."
               className="w-full bg-transparent text-sm text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
               rows={2}
@@ -105,16 +156,19 @@ export default function RightChatPanel({
                 Agent
               </span>
               
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="bg-transparent text-gray-400 text-xs focus:outline-none cursor-pointer"
-              >
-                <option value="GPT-5">GPT-5</option>
-                <option value="GPT-4">GPT-4</option>
-                <option value="Claude">Claude</option>
-                <option value="Gemini">Gemini</option>
-              </select>
+              {chatMode === "ai" && (
+  <select
+    value={selectedModel}
+    onChange={(e) => setSelectedModel(e.target.value)}
+    className="bg-transparent text-gray-400 text-xs focus:outline-none cursor-pointer"
+  >
+    <option value="GPT-5">GPT-5</option>
+    <option value="GPT-4">GPT-4</option>
+    <option value="Claude">Claude</option>
+    <option value="Gemini">Gemini</option>
+  </select>
+)}
+
               
             </div>
             <div className="flex items-center gap-2">

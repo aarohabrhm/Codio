@@ -70,19 +70,26 @@ export default function Editor() {
 
   // Collaboration
   const {
-    isConnected,
-    onlineUsers,
-    userCursors,
-    myColor,
-    sendCursor,
-    sendCodeChange,
-    sendFileSelect
-  } = useCollaboration(projectId);
+  isConnected,
+  onlineUsers,
+  userCursors,
+  myColor,
+  teamMessages,
+  typingUsers,
+  sendCursor,
+  sendCodeChange,
+  sendFileSelect,
+  sendChatMessage,
+  sendChatTyping   // ✅ REQUIRED
+} = useCollaboration(projectId);
+
+
 
   const editorRef = useRef(null);
   const saveRef = useRef(null);
 
   // UI State
+  const [chatMode, setChatMode] = useState("ai");
   const [activeLeftTab, setActiveLeftTab] = useState("files");
   const [searchQuery, setSearchQuery] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
@@ -94,7 +101,48 @@ export default function Editor() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
 
+
+  //chat page
+  useEffect(() => {
+  if (chatMode !== "team") return;
+  setChatMessages(teamMessages);
+}, [teamMessages, chatMode]);
+
+
+
+
   // Fetch project data
+
+
+
+  useEffect(() => {
+  if (!projectId || chatMode !== "team") return;
+
+  const loadChatHistory = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:8000/api/chat/${projectId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
+      );
+
+      // Load persisted messages FIRST
+      setChatMessages(res.data);
+    } catch (err) {
+      console.error("❌ Failed to load chat history", err);
+    }
+  };
+
+  loadChatHistory();
+}, [projectId, chatMode]);
+
+
+
+
+
   useEffect(() => {
     const fetchProject = async () => {
       if (!projectId) return;
@@ -213,16 +261,44 @@ export default function Editor() {
     setTerminalOutput(prev => [...prev, `> ${terminalInput}`, "Command executed"]);
     setTerminalInput("");
   };
+
+  const typingTimeoutRef = useRef(null);
+  const handleTyping = () => {
+    if (chatMode !== "team") return;
+
+    // Send "true" immediately
+    sendChatTyping(true);
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout to send "false" after 2 seconds
+    typingTimeoutRef.current = setTimeout(() => {
+      sendChatTyping(false);
+    }, 2000);
+  };
+
   
   const onChatSend = () => {
-    if (!chatInput.trim()) return;
+  if (!chatInput.trim()) return;
+
+  if (chatMode === "team") {
+    sendChatTyping(false);
+    sendChatMessage(chatInput.trim());
+  } else {
     setChatMessages(prev => [
       ...prev,
-      { role: "user", text: chatInput },
-      { role: "assistant", text: "I'm here to help! (Demo response)" }
+      { role: "user", text: chatInput.trim() }
     ]);
-    setChatInput("");
-  };
+  }
+
+  setChatInput(""); // ✅ CLEAR INPUT
+};
+
+
+
 
   const handleRunCode = useCallback(async () => {
   if (!activeFile || !editorRef.current) return;
@@ -461,14 +537,21 @@ export default function Editor() {
       </main>
 
       <RightChatPanel
-        isOpen={chatOpen}
-        onToggle={() => setChatOpen(!chatOpen)}
-        chatMessages={chatMessages}
-        chatInput={chatInput}
-        setChatInput={setChatInput}
-        onChatSend={onChatSend}
-        onClearChat={() => setChatMessages([])}
-      />
+  isOpen={chatOpen}
+  onToggle={() => setChatOpen(!chatOpen)}
+  chatMode={chatMode}
+  setChatMode={setChatMode}
+  chatMessages={chatMessages}
+  chatInput={chatInput}
+  setChatInput={setChatInput}
+  onChatSend={onChatSend}
+  onTyping={handleTyping}
+  typingUsers={typingUsers}
+  onClearChat={() => setChatMessages([])}
+/>
+
+
+
       
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
