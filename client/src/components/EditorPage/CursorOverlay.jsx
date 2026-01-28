@@ -1,53 +1,81 @@
-// components/EditorPage/CursorOverlay.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
-export default function CursorOverlay({ userCursors, activeFileId, onlineUsers }) {
-  const [cursors, setCursors] = useState([]);
+export default function CursorOverlay({ userCursors, userSelections, activeFileId, onlineUsers }) {
+  const [cursorPositions, setCursorPositions] = useState({});
+  const overlayRef = useRef(null);
 
   useEffect(() => {
-    // Filter cursors for current file
-    const currentFileCursors = Object.entries(userCursors)
-      .filter(([userId, cursor]) => cursor.fileId === activeFileId)
-      .map(([userId, cursor]) => {
-        const user = onlineUsers.find(u => u.userId === userId);
-        return {
-          userId,
-          username: user?.username || 'Anonymous',
-          color: cursor.color,
-          line: cursor.line,
-          column: cursor.column
-        };
+    const updateCursorPositions = () => {
+      const editor = document.querySelector('.monaco-editor .view-lines');
+      if (!editor) return;
+
+      const newPositions = {};
+
+      Object.entries(userCursors).forEach(([socketId, cursor]) => {
+        if (cursor.fileId !== activeFileId) return;
+
+        // Get the Monaco editor container
+        const monacoContainer = document.querySelector('.monaco-editor');
+        if (!monacoContainer) return;
+
+        // Find all lines
+        const lines = editor.querySelectorAll('.view-line');
+        const lineElement = lines[cursor.line - 1];
+
+        if (lineElement) {
+          const lineRect = lineElement.getBoundingClientRect();
+          const containerRect = monacoContainer.getBoundingClientRect();
+          
+          // More accurate character width calculation
+          const charWidth = 7.22; // Monaco editor default
+          const leftOffset = (cursor.column - 1) * charWidth;
+
+          newPositions[socketId] = {
+            top: lineRect.top - containerRect.top,
+            left: lineRect.left - containerRect.left + leftOffset,
+            color: cursor.color,
+            username: cursor.username
+          };
+        }
       });
 
-    setCursors(currentFileCursors);
-  }, [userCursors, activeFileId, onlineUsers]);
+      setCursorPositions(newPositions);
+    };
+
+    updateCursorPositions();
+    
+    // Update more frequently for smoother cursor movement
+    const interval = setInterval(updateCursorPositions, 50);
+
+    return () => clearInterval(interval);
+  }, [userCursors, activeFileId]);
 
   return (
-    <>
-      {cursors.map((cursor) => (
+    <div ref={overlayRef} className="absolute inset-0 pointer-events-none z-50">
+      {Object.entries(cursorPositions).map(([socketId, pos]) => (
         <div
-          key={cursor.userId}
-          className="absolute pointer-events-none z-50"
+          key={socketId}
+          className="absolute pointer-events-none transition-all duration-75 ease-linear"
           style={{
-            // Position will be calculated by CodeMirror/Monaco
-            // This is a placeholder for the cursor rendering logic
+            top: `${pos.top}px`,
+            left: `${pos.left}px`,
           }}
         >
           {/* Cursor line */}
           <div
-            className="absolute w-0.5 h-5 animate-pulse"
-            style={{ backgroundColor: cursor.color }}
+            className="w-0.5 h-5 animate-pulse"
+            style={{ backgroundColor: pos.color }}
           />
           
           {/* Username label */}
           <div
-            className="absolute -top-6 left-0 px-2 py-0.5 rounded text-xs font-medium text-white whitespace-nowrap shadow-lg"
-            style={{ backgroundColor: cursor.color }}
+            className="absolute -top-6 left-0 text-[10px] text-white px-2 py-0.5 rounded whitespace-nowrap shadow-lg font-medium"
+            style={{ backgroundColor: pos.color }}
           >
-            {cursor.username}
+            {pos.username}
           </div>
         </div>
       ))}
-    </>
+    </div>
   );
 }

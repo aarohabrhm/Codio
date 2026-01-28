@@ -1,262 +1,308 @@
 // server/websocket/collaborationServer.js
-import { WebSocketServer } from 'ws';
+import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
 import ChatMessage from "../models/ChatMessage.js";
 
-
-const projects = new Map(); // Map<projectId, Set<clientInfo>>
-
+const projects = new Map(); // Map<projectId, Map<socketId, clientInfo>>
 
 export function setupWebSocket(server) {
-  const wss = new WebSocketServer({ 
-    server,
-    path: '/ws/collab'
+  const io = new Server(server, {
+    cors: {
+      origin: 'http://localhost:5173',
+      credentials: true
+    },
+    path: '/socket.io/'
   });
 
-  wss.on('connection', async (ws, req) => {
+  io.on('connection', (socket) => {
+    console.log('🔌 Client connected:', socket.id);
     let clientInfo = null;
 
-    ws.on('message', async (data) => {
+    // ========== JOIN PROJECT ==========
+    socket.on('join-project', async ({ projectId, token }) => {
       try {
-        const message = JSON.parse(data.toString());
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        const userId = decoded.id;
 
-        // Handle initial join
-        if (message.type === 'join') {
-          const { projectId, token } = message;
+        const user = await User.findById(userId).select('fullname avatar');
+        const username = user?.fullname || 'Anonymous';
+        const avatar = user?.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 
-          // Verify token
-          let userId, username, avatar;
-          try {
-            const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-            userId = decoded.id;
-            
-            // Get user details
-            const user = await User.findById(userId).select('fullname avatar');
-            username = user?.fullname || 'Anonymous';
-            avatar = user?.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-          } catch (err) {
-            ws.send(JSON.stringify({ type: 'error', message: 'Invalid token' }));
-            ws.close();
-            return;
-          }
+        clientInfo = {
+          socketId: socket.id,
+          userId,
+          username,
+          avatar,
+          projectId,
+          cursor: null,
+          selection: null,
+          color: generateColor(userId),
+          activeFile: null
+        };
 
-          // Store client info
-          clientInfo = {
-            ws,
-            userId,
-            username,
-            avatar,
-            projectId,
-            cursor: null,
-            color: generateColor(userId)
-          };
+        socket.join(projectId);
 
-          // Add to project room
-          if (!projects.has(projectId)) {
-            projects.set(projectId, new Set());
-          }
-          projects.get(projectId).add(clientInfo);
+        if (!projects.has(projectId)) {
+          projects.set(projectId, new Map());
+        }
+        projects.get(projectId).set(socket.id, clientInfo);
 
-          // Send current users to new client
-          const users = Array.from(projects.get(projectId))
-            .filter(c => c !== clientInfo)
-            .map(c => ({
-              userId: c.userId,
-              username: c.username,
-              avatar: c.avatar,
-              cursor: c.cursor,
-              color: c.color
-            }));
-
-          ws.send(JSON.stringify({
-            type: 'users',
-            users,
-            yourColor: clientInfo.color
+        const users = Array.from(projects.get(projectId).values())
+          .filter(c => c.socketId !== socket.id)
+          .map(c => ({
+            socketId: c.socketId,
+            userId: c.userId,
+            username: c.username,
+            avatar: c.avatar,
+            cursor: c.cursor,
+            selection: c.selection,
+            color: c.color,
+            activeFile: c.activeFile
           }));
 
-          // Broadcast new user joined
-          broadcast(projectId, {
-            type: 'user-joined',
-            user: {
-              userId,
-              username,
-              avatar,
-              color: clientInfo.color
-            }
-          }, clientInfo);
+        socket.emit('project-users', {
+          users,
+          yourColor: clientInfo.color
+        });
 
-        }
+        socket.to(projectId).emit('user-joined', {
+          socketId: socket.id,
+          userId,
+          username,
+          avatar,
+          color: clientInfo.color
+        });
 
-        // Handle cursor movement
-        else if (message.type === 'cursor') {
-          if (!clientInfo) return;
+        console.log(`✅ User ${username} joined project ${projectId}`);
 
-          clientInfo.cursor = {
-            line: message.line,
-            column: message.column,
-            fileId: message.fileId
-          };
-
-          broadcast(clientInfo.projectId, {
-            type: 'cursor',
-            userId: clientInfo.userId,
-            cursor: clientInfo.cursor,
-            color: clientInfo.color
-          }, clientInfo);
-        }
-
-        // Handle code changes (for cursor position updates)
-        else if (message.type === 'code-change') {
-          if (!clientInfo) return;
-
-          broadcast(clientInfo.projectId, {
-            type: 'code-change',
-            userId: clientInfo.userId,
-            fileId: message.fileId,
-            changes: message.changes
-          }, clientInfo);
-        }
-
-        // Handle file selection
-        else if (message.type === 'file-select') {
-          if (!clientInfo) return;
-
-          broadcast(clientInfo.projectId, {
-            type: 'file-select',
-            userId: clientInfo.userId,
-            fileId: message.fileId
-          }, clientInfo);
-        }
-        // Handle TEAM CHAT MESSAGE
-// Handle TEAM CHAT MESSAGE
-else if (message.type === 'CHAT_MESSAGE') {
-  if (!clientInfo) return;
-
-  const { text } = message.payload;
-
-  // Save to DB
-  const savedMessage = await ChatMessage.create({
-    projectId: clientInfo.projectId,
-    sender: clientInfo.userId,
-    senderUsername: clientInfo.username,
-    senderAvatar: clientInfo.avatar,
-    text,
-    mode: "team",
-    seenBy: [clientInfo.userId], // ✅ Sender has seen it
-  });
-
-  // Broadcast to everyone in project (including sender)
-  broadcast(clientInfo.projectId, {
-    type: 'CHAT_MESSAGE',
-    payload: {
-      _id: savedMessage._id.toString(),
-      projectId: clientInfo.projectId,
-      senderId: clientInfo.userId,
-      senderUsername: clientInfo.username,
-      senderAvatar: clientInfo.avatar,
-      text: savedMessage.text,
-      createdAt: savedMessage.createdAt,
-      seenBy: [clientInfo.userId],
-    }
-  }, null); // ✅ null = broadcast to ALL (including sender)
-}
-
-// Handle CHAT TYPING indicator
-else if (message.type === 'CHAT_TYPING') {
-          if (!clientInfo) return;
-
-          // ✅ FIX 2: Pass 'clientInfo' as sender so only OTHERS see you typing
-          broadcast(clientInfo.projectId, {
-            type: 'CHAT_TYPING',
-            payload: {
-              userId: clientInfo.userId,
-              username: clientInfo.username,
-              typing: message.payload.typing
-            }
-          }, clientInfo);
-        }
-
-
-
-      } catch (error) {
-        console.error('WebSocket message error:', error);
+      } catch (err) {
+        console.error('❌ Join error:', err);
+        socket.emit('error', { message: 'Invalid token' });
+        socket.disconnect();
       }
     });
 
-    ws.on('close', () => {
+    // ========== CURSOR MOVEMENT ==========
+    socket.on('cursor-move', ({ fileId, line, column }) => {
+      if (!clientInfo) return;
+
+      clientInfo.cursor = { fileId, line, column };
+      clientInfo.activeFile = fileId;
+
+      socket.to(clientInfo.projectId).emit('cursor-update', {
+        socketId: socket.id,
+        userId: clientInfo.userId,
+        username: clientInfo.username,
+        cursor: { fileId, line, column },
+        color: clientInfo.color
+      });
+    });
+
+    // ========== TEXT SELECTION ==========
+    socket.on('selection-change', ({ fileId, start, end }) => {
+      if (!clientInfo) return;
+
+      clientInfo.selection = { fileId, start, end };
+
+      socket.to(clientInfo.projectId).emit('selection-update', {
+        socketId: socket.id,
+        userId: clientInfo.userId,
+        selection: { fileId, start, end },
+        color: clientInfo.color
+      });
+    });
+
+    // ========== CODE CHANGES (Real-time typing) ==========
+    socket.on('code-change', ({ fileId, changes, content }) => {
+      if (!clientInfo) return;
+
+      // Broadcast to all others in project instantly
+      socket.to(clientInfo.projectId).emit('code-update', {
+        socketId: socket.id,
+        userId: clientInfo.userId,
+        username: clientInfo.username,
+        fileId,
+        changes,
+        content
+      });
+    });
+
+    // ========== FILE OPERATIONS ==========
+    
+    // File Created
+    socket.on('file-created', ({ parentId, fileData }) => {
+      if (!clientInfo) return;
+
+      socket.to(clientInfo.projectId).emit('file-created', {
+        socketId: socket.id,
+        userId: clientInfo.userId,
+        username: clientInfo.username,
+        parentId,
+        fileData
+      });
+    });
+
+    // Folder Created
+    socket.on('folder-created', ({ parentId, folderData }) => {
+      if (!clientInfo) return;
+
+      socket.to(clientInfo.projectId).emit('folder-created', {
+        socketId: socket.id,
+        userId: clientInfo.userId,
+        username: clientInfo.username,
+        parentId,
+        folderData
+      });
+    });
+
+    // File Renamed
+    socket.on('file-renamed', ({ fileId, newName }) => {
+      if (!clientInfo) return;
+
+      socket.to(clientInfo.projectId).emit('file-renamed', {
+        socketId: socket.id,
+        userId: clientInfo.userId,
+        username: clientInfo.username,
+        fileId,
+        newName
+      });
+    });
+
+    // File Deleted
+    socket.on('file-deleted', ({ fileId }) => {
+      if (!clientInfo) return;
+
+      socket.to(clientInfo.projectId).emit('file-deleted', {
+        socketId: socket.id,
+        userId: clientInfo.userId,
+        username: clientInfo.username,
+        fileId
+      });
+    });
+
+    // ========== FILE SELECTION ==========
+    socket.on('file-select', ({ fileId }) => {
+      if (!clientInfo) return;
+
+      clientInfo.activeFile = fileId;
+
+      socket.to(clientInfo.projectId).emit('user-file-change', {
+        socketId: socket.id,
+        userId: clientInfo.userId,
+        username: clientInfo.username,
+        fileId
+      });
+    });
+
+    // ========== TEAM CHAT MESSAGE ==========
+    socket.on('chat-message', async ({ text }) => {
+      if (!clientInfo) return;
+
+      try {
+        const savedMessage = await ChatMessage.create({
+          projectId: clientInfo.projectId,
+          sender: clientInfo.userId,
+          senderUsername: clientInfo.username,
+          senderAvatar: clientInfo.avatar,
+          text,
+          mode: "team",
+          seenBy: [clientInfo.userId]
+        });
+
+        io.to(clientInfo.projectId).emit('chat-message', {
+          _id: savedMessage._id.toString(),
+          projectId: clientInfo.projectId,
+          senderId: clientInfo.userId,
+          senderUsername: clientInfo.username,
+          senderAvatar: clientInfo.avatar,
+          text: savedMessage.text,
+          createdAt: savedMessage.createdAt,
+          seenBy: [clientInfo.userId]
+        });
+
+      } catch (err) {
+        console.error('❌ Chat message error:', err);
+      }
+    });
+
+    // ========== CHAT TYPING ==========
+    socket.on('chat-typing', ({ typing }) => {
+      if (!clientInfo) return;
+
+      socket.to(clientInfo.projectId).emit('user-typing', {
+        userId: clientInfo.userId,
+        username: clientInfo.username,
+        typing
+      });
+    });
+
+    // ========== CHAT SEEN ==========
+    socket.on('chat-seen', async ({ messageIds }) => {
+      if (!clientInfo) return;
+
+      try {
+        await ChatMessage.updateMany(
+          {
+            _id: { $in: messageIds },
+            sender: { $ne: clientInfo.userId },
+            seenBy: { $ne: clientInfo.userId }
+          },
+          { $push: { seenBy: clientInfo.userId } }
+        );
+
+        io.to(clientInfo.projectId).emit('messages-seen', {
+          userId: clientInfo.userId,
+          messageIds
+        });
+
+      } catch (err) {
+        console.error('❌ Chat seen error:', err);
+      }
+    });
+
+    // ========== DISCONNECT ==========
+    socket.on('disconnect', () => {
       if (clientInfo) {
         const { projectId, userId, username } = clientInfo;
-        
-        // Remove from project room
+
         const projectClients = projects.get(projectId);
         if (projectClients) {
-          projectClients.delete(clientInfo);
-          
-          // Broadcast user left
-          broadcast(projectId, {
-            type: 'user-left',
+          projectClients.delete(socket.id);
+
+          socket.to(projectId).emit('user-left', {
+            socketId: socket.id,
             userId
           });
 
-          // Clean up empty projects
           if (projectClients.size === 0) {
             projects.delete(projectId);
           }
         }
+
+        console.log(`👋 User ${username} left project ${projectId}`);
       }
     });
-
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-    });
   });
 
-  console.log('✅ WebSocket collaboration server initialized');
+  console.log('✅ Socket.IO collaboration server initialized');
+  return io;
 }
 
-// Broadcast to all clients in a project except sender
-function broadcast(projectId, message, sender = null) {
-  const clients = projects.get(projectId);
-  if (!clients) return;
-
-  const messageStr = JSON.stringify(message);
-  
-  clients.forEach(client => {
-    // ✅ FIX 3: Check if this client is the sender. If so, skip.
-    if (sender && client === sender) return;
-
-    if (client.ws.readyState === 1) { // 1 = OPEN
-      client.ws.send(messageStr);
-    }
-  });
-}
-
-// Generate consistent color for user based on ID
 function generateColor(userId) {
   const colors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', 
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
     '#98D8C8', '#F7B731', '#5F27CD', '#00D2FF',
     '#FF6348', '#1DD1A1', '#EE5A6F', '#54A0FF'
   ];
-  
-  // Use userId to generate consistent color
+
   const hash = userId.split('').reduce((acc, char) => {
     return char.charCodeAt(0) + ((acc << 5) - acc);
   }, 0);
-  
+
   return colors[Math.abs(hash) % colors.length];
 }
 
-export function broadcastToProject(projectId, message) {
-  const clients = projects.get(projectId);
-  if (!clients) return;
-
-  const data = JSON.stringify(message);
-
-  clients.forEach(client => {
-    if (client.ws.readyState === 1) {
-      client.ws.send(data);
-    }
-  });
+export function broadcastToProject(io, projectId, event, data) {
+  io.to(projectId).emit(event, data);
 }

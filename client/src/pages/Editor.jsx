@@ -26,6 +26,7 @@ const EMPTY_PROJECT_FILES = {
     isOpen: true,
   },
 };
+
 // Helper to map file extensions to backend languages
 const getLanguageFromExtension = (filename) => {
   const ext = filename.split('.').pop().toLowerCase();
@@ -35,10 +36,6 @@ const getLanguageFromExtension = (filename) => {
     py: 'python',
     c: 'c',
     cpp: 'cpp',
-    // Add these if you add Docker images for them later:
-    // java: 'java',
-    // go: 'go', 
-    // rs: 'rust'
   };
   return map[ext] || 'plaintext';
 };
@@ -57,7 +54,6 @@ const getMyUserId = () => {
   }
 };
 
-
 export default function Editor() {
   const { projectId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -75,34 +71,37 @@ export default function Editor() {
     toggleFolder,
     openFile,
     closeTab,
-    createFile,
-    createFolder,
-    renameNode,
-    deleteNode,
     updateContent,
     saveFile,
   } = useFileManager(EMPTY_PROJECT_FILES, []);
 
-  // Collaboration
+
+
   const {
-  isConnected,
-  onlineUsers,
-  userCursors,
-  myColor,
-  teamMessages,
-  typingUsers,
-  sendCursor,
-  sendCodeChange,
-  sendFileSelect,
-  sendChatMessage,
-  sendChatTyping   // ✅ REQUIRED
-} = useCollaboration(projectId);
+    isConnected,
+    onlineUsers,
+    userCursors,
+    userSelections,
+    myColor,
+    teamMessages,
+    typingUsers,
+    sendCursor,
+    sendSelection,
+    sendCodeChange,
+    sendFileSelect,
+     sendFileCreated,      // ✅ NEW
+  sendFolderCreated,    // ✅ NEW
+  sendFileRenamed,      // ✅ NEW
+  sendFileDeleted,
+    sendChatMessage,
+    sendChatTyping,
+    markMessagesAsSeen
+  } = useCollaboration(projectId);
 
-
-
+  
   const editorRef = useRef(null);
   const saveRef = useRef(null);
-const myUserId = getMyUserId();
+  const myUserId = getMyUserId();
 
   // UI State
   const [unseenCount, setUnseenCount] = useState(0);
@@ -119,104 +118,229 @@ const myUserId = getMyUserId();
   const [chatInput, setChatInput] = useState("");
 
 
-  //chat page
-  useEffect(() => {
-  if (chatMode !== "team") return;
-  setChatMessages(teamMessages);
-}, [teamMessages, chatMode]);
-
-
-// Mark messages as seen when chat is open in team mode
-useEffect(() => {
-  if (!projectId || chatMode !== "team" || !chatOpen) return;
-
-  const markAsSeen = async () => {
-    try {
-      await axios.post(
-        `http://localhost:8000/api/chat/${projectId}/seen`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${
-              localStorage.getItem("accessToken") ||
-              sessionStorage.getItem("accessToken")
-            }`,
-          },
-        }
-      );
-    } catch (err) {
-      console.error("❌ Failed to mark messages as seen:", err);
+    const deleteNode = useCallback((fileId) => {
+  setFiles(prev => {
+    const newFiles = { ...prev };
+    const file = newFiles[fileId];
+    
+    if (file && file.parent) {
+      const parent = newFiles[file.parent];
+      if (parent) {
+        parent.children = parent.children.filter(id => id !== fileId);
+      }
     }
+    
+    delete newFiles[fileId];
+    return newFiles;
+  });
+  
+  sendFileDeleted(fileId);
+}, [setFiles, sendFileDeleted]);
+
+
+  const createFile = useCallback((parentId, name) => {
+  const fileData = {
+    id: `file-${Date.now()}`,
+    name,
+    type: 'file',
+    parent: parentId,
+    content: ''
+  };
+  
+  // Local update
+  setFiles(prev => ({
+    ...prev,
+    [fileData.id]: fileData,
+    [parentId]: {
+      ...prev[parentId],
+      children: [...(prev[parentId]?.children || []), fileData.id]
+    }
+  }));
+  
+  // Broadcast to others
+  sendFileCreated(parentId, fileData);
+}, [setFiles, sendFileCreated]);
+  // ✅ UPDATED: Socket.IO Collaboration with new methods
+  const createFolder = useCallback((parentId, name) => {
+  const folderData = {
+    id: `folder-${Date.now()}`,
+    name,
+    type: 'folder',
+    parent: parentId,
+    children: [],
+    isOpen: false
+  };
+  
+  // Local update
+  setFiles(prev => ({
+    ...prev,
+    [folderData.id]: folderData,
+    [parentId]: {
+      ...prev[parentId],
+      children: [...(prev[parentId]?.children || []), folderData.id]
+    }
+  }));
+  
+  // Broadcast to others
+  sendFolderCreated(parentId, folderData);
+}, [setFiles, sendFolderCreated]);
+
+
+
+const renameNode = useCallback((fileId, newName) => {
+  setFiles(prev => ({
+    ...prev,
+    [fileId]: {
+      ...prev[fileId],
+      name: newName
+    }
+  }));
+  
+  sendFileRenamed(fileId, newName);
+}, [setFiles, sendFileRenamed]);
+
+
+  // Sync team messages to chat
+  useEffect(() => {
+    if (chatMode !== "team") return;
+    setChatMessages(teamMessages);
+  }, [teamMessages, chatMode]);
+
+
+useEffect(() => {
+  const handleFileCreated = (event) => {
+    const { parentId, fileData } = event.detail;
+    setFiles(prev => ({
+      ...prev,
+      [fileData.id]: fileData,
+      [parentId]: {
+        ...prev[parentId],
+        children: [...(prev[parentId]?.children || []), fileData.id]
+      }
+    }));
   };
 
-  // Mark as seen immediately when opening chat
-  markAsSeen();
+  const handleFolderCreated = (event) => {
+    const { parentId, folderData } = event.detail;
+    setFiles(prev => ({
+      ...prev,
+      [folderData.id]: folderData,
+      [parentId]: {
+        ...prev[parentId],
+        children: [...(prev[parentId]?.children || []), folderData.id]
+      }
+    }));
+  };
 
-  // Also mark as seen when new messages arrive while chat is open
-  const interval = setInterval(markAsSeen, 2000);
+  const handleFileRenamed = (event) => {
+    const { fileId, newName } = event.detail;
+    setFiles(prev => ({
+      ...prev,
+      [fileId]: {
+        ...prev[fileId],
+        name: newName
+      }
+    }));
+  };
 
-  return () => clearInterval(interval);
-}, [projectId, chatMode, chatOpen, teamMessages.length]);
+  const handleFileDeleted = (event) => {
+    const { fileId } = event.detail;
+    setFiles(prev => {
+      const newFiles = { ...prev };
+      const file = newFiles[fileId];
+      
+      if (file && file.parent) {
+        const parent = newFiles[file.parent];
+        if (parent) {
+          parent.children = parent.children.filter(id => id !== fileId);
+        }
+      }
+      
+      delete newFiles[fileId];
+      return newFiles;
+    });
+  };
+
+  window.addEventListener('remote-file-created', handleFileCreated);
+  window.addEventListener('remote-folder-created', handleFolderCreated);
+  window.addEventListener('remote-file-renamed', handleFileRenamed);
+  window.addEventListener('remote-file-deleted', handleFileDeleted);
+
+  return () => {
+    window.removeEventListener('remote-file-created', handleFileCreated);
+    window.removeEventListener('remote-folder-created', handleFolderCreated);
+    window.removeEventListener('remote-file-renamed', handleFileRenamed);
+    window.removeEventListener('remote-file-deleted', handleFileDeleted);
+  };
+}, [setFiles]);
 
 
-  // Fetch project data
+
+
+
+  // ✅ UPDATED: Mark messages as seen using Socket.IO
+  useEffect(() => {
+    if (!projectId || chatMode !== "team" || !chatOpen) return;
+
+    const unseenMessages = teamMessages.filter(
+      msg => msg.senderId !== myUserId && !msg.seenBy?.includes(myUserId)
+    );
+
+    if (unseenMessages.length > 0) {
+      const messageIds = unseenMessages.map(m => m._id);
+      markMessagesAsSeen(messageIds);
+    }
+  }, [projectId, chatMode, chatOpen, teamMessages, myUserId, markMessagesAsSeen]);
 
   // Track unseen messages in real-time
-useEffect(() => {
-  if (chatMode !== "team") return;
+  useEffect(() => {
+    if (chatMode !== "team") return;
 
-  if (chatOpen) {
-    // Reset unseen count when chat is opened
-    setUnseenCount(0);
-  } else {
-    // Count unseen messages when chat is closed
-    const unseen = teamMessages.filter(
-      msg => msg.senderId !== myUserId && !msg.seenBy?.includes(myUserId)
-    ).length;
-    setUnseenCount(unseen);
-  }
-}, [teamMessages, chatOpen, chatMode, myUserId]);
-
-
-// Load chat history and track unseen messages
-useEffect(() => {
-  if (!projectId || chatMode !== "team") return;
-
-  const loadChatHistory = async () => {
-    try {
-      const res = await axios.get(
-        `http://localhost:8000/api/chat/${projectId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${
-              localStorage.getItem("accessToken") ||
-              sessionStorage.getItem("accessToken")
-            }`,
-          },
-        }
-      );
-
-      // Load persisted messages FIRST
-      setChatMessages(res.data);
-      
-      // Calculate unseen count
-      if (!chatOpen) {
-        const unseen = res.data.filter(
-          msg => msg.senderId !== myUserId && !msg.seenBy?.includes(myUserId)
-        ).length;
-        setUnseenCount(unseen);
-      }
-    } catch (err) {
-      console.error("❌ Failed to load chat history", err);
+    if (chatOpen) {
+      setUnseenCount(0);
+    } else {
+      const unseen = teamMessages.filter(
+        msg => msg.senderId !== myUserId && !msg.seenBy?.includes(myUserId)
+      ).length;
+      setUnseenCount(unseen);
     }
-  };
+  }, [teamMessages, chatOpen, chatMode, myUserId]);
 
-  loadChatHistory();
-}, [projectId, chatMode, myUserId, chatOpen]);
+  // Load chat history and track unseen messages
+  useEffect(() => {
+    if (!projectId || chatMode !== "team") return;
 
+    const loadChatHistory = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:8000/api/chat/${projectId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${
+                localStorage.getItem("accessToken") ||
+                sessionStorage.getItem("accessToken")
+              }`,
+            },
+          }
+        );
 
+        setChatMessages(res.data);
+        
+        if (!chatOpen) {
+          const unseen = res.data.filter(
+            msg => msg.senderId !== myUserId && !msg.seenBy?.includes(myUserId)
+          ).length;
+          setUnseenCount(unseen);
+        }
+      } catch (err) {
+        console.error("❌ Failed to load chat history", err);
+      }
+    };
 
+    loadChatHistory();
+  }, [projectId, chatMode, myUserId, chatOpen]);
 
+  // Fetch project data
   useEffect(() => {
     const fetchProject = async () => {
       if (!projectId) return;
@@ -256,7 +380,7 @@ useEffect(() => {
     };
 
     fetchProject();
-  }, [projectId]);
+  }, [projectId, setFiles, setActiveFileId]);
 
   // Handle save
   const handleSave = useCallback(async () => {
@@ -293,25 +417,27 @@ useEffect(() => {
     } finally {
       setIsSaving(false);
     }
-  }, [files, activeFileId, projectId]);
+  }, [files, activeFileId, projectId, setFiles, saveFile]);
 
   useEffect(() => {
     saveRef.current = handleSave;
   }, [handleSave]);
 
-  // Handle cursor movement
+  // ✅ Handle cursor movement - Send via Socket.IO
   const handleCursorChange = useCallback((line, column) => {
     if (activeFileId) {
       sendCursor(line, column, activeFileId);
     }
   }, [activeFileId, sendCursor]);
 
-  // Handle content change
+  // ✅ UPDATED: Handle content change - Send real-time updates via Socket.IO
   const handleContentChange = useCallback((content) => {
     updateContent(content);
     
-    // Optionally send changes to other users
-    // sendCodeChange(activeFileId, content);
+    // Send real-time code changes to other users
+    if (activeFileId) {
+      sendCodeChange(activeFileId, null, content);
+    }
   }, [updateContent, activeFileId, sendCodeChange]);
 
   // Notify when file is opened
@@ -340,105 +466,91 @@ useEffect(() => {
   const handleTyping = () => {
     if (chatMode !== "team") return;
 
-    // Send "true" immediately
     sendChatTyping(true);
 
-    // Clear existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Set new timeout to send "false" after 2 seconds
     typingTimeoutRef.current = setTimeout(() => {
       sendChatTyping(false);
     }, 2000);
   };
 
-  
   const onChatSend = () => {
-  if (!chatInput.trim()) return;
+    if (!chatInput.trim()) return;
 
-  if (chatMode === "team") {
-    sendChatTyping(false);
-    sendChatMessage(chatInput.trim());
-  } else {
-    setChatMessages(prev => [
-      ...prev,
-      { role: "user", text: chatInput.trim() }
-    ]);
-  }
+    if (chatMode === "team") {
+      sendChatTyping(false);
+      sendChatMessage(chatInput.trim());
+    } else {
+      setChatMessages(prev => [
+        ...prev,
+        { role: "user", text: chatInput.trim() }
+      ]);
+    }
 
-  setChatInput(""); // ✅ CLEAR INPUT
-};
-
-
-
+    setChatInput("");
+  };
 
   const handleRunCode = useCallback(async () => {
-  if (!activeFile || !editorRef.current) return;
+    if (!activeFile || !editorRef.current) return;
 
-  // 1. Detect language
-  const language = getLanguageFromExtension(activeFile.name);
-  if (language === "plaintext") {
-    setConsoleOutput(["❌ Error: This file type cannot be executed."]);
+    const language = getLanguageFromExtension(activeFile.name);
+    if (language === "plaintext") {
+      setConsoleOutput(["❌ Error: This file type cannot be executed."]);
+      setActiveBottomTab("console");
+      return;
+    }
+
+    setConsoleOutput([]);
+    setTerminalOutput([`> Running ${activeFile.name} (${language})...`]);
     setActiveBottomTab("console");
-    return;
-  }
 
-  // 2. UI reset
-  setConsoleOutput([]);
-  setTerminalOutput([`> Running ${activeFile.name} (${language})...`]);
-  setActiveBottomTab("console");
+    try {
+      if (!editorRef.current) return;
+      const sourceCode = editorRef.current.getContent();
 
-  try {
-    if (!editorRef.current) return;
-    // 3. Always trust editor content
-    const sourceCode = editorRef.current.getContent();
-
-    const res = await axios.post(
-      "http://localhost:8000/api/execute",
-      { language, sourceCode },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      }
-    );
-
-    const { run } = res.data;
-
-    // 4. ACCUMULATE OUTPUT ONCE (FIX 3)
-    const outputLines = [];
-
-    if (run.stdout?.trim()) {
-      outputLines.push(...run.stdout.split("\n"));
-    }
-
-    if (run.stderr?.trim()) {
-      outputLines.push(
-        ...run.stderr.split("\n").map((l) => `⚠️ ${l}`)
+      const res = await axios.post(
+        "http://localhost:8000/api/execute",
+        { language, sourceCode },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        }
       );
+
+      const { run } = res.data;
+      const outputLines = [];
+
+      if (run.stdout?.trim()) {
+        outputLines.push(...run.stdout.split("\n"));
+      }
+
+      if (run.stderr?.trim()) {
+        outputLines.push(
+          ...run.stderr.split("\n").map((l) => `⚠️ ${l}`)
+        );
+      }
+
+      if (outputLines.length === 0) {
+        outputLines.push("✔ Program finished with no output.");
+      }
+
+      setConsoleOutput(outputLines);
+
+      setTerminalOutput((prev) => [
+        ...prev,
+        `> Process exited with code ${run.code}`,
+      ]);
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || err.message;
+
+      setConsoleOutput([`❌ Execution Failed: ${errorMessage}`]);
     }
-
-    if (outputLines.length === 0) {
-      outputLines.push("✔ Program finished with no output.");
-    }
-
-    // ✅ SINGLE STATE UPDATE
-    setConsoleOutput(outputLines);
-
-    setTerminalOutput((prev) => [
-      ...prev,
-      `> Process exited with code ${run.code}`,
-    ]);
-  } catch (err) {
-    const errorMessage =
-      err.response?.data?.message || err.message;
-
-    setConsoleOutput([`❌ Execution Failed: ${errorMessage}`]);
-  }
-}, [activeFile]);
-
+  }, [activeFile]);
 
   // Ctrl+S Listener
   useEffect(() => {
@@ -530,22 +642,21 @@ useEffect(() => {
           </div>
            
           {/* Right: Chat */}
-          {/* Right: Chat */}
-<div className="flex items-center gap-2">
-  {!chatOpen && (
-    <button 
-      onClick={() => setChatOpen(true)} 
-      className="relative px-3 py-1.5 text-xs bg-[#1a1a1a] rounded-lg flex gap-2 hover:bg-[#2a2a2a]"
-    >
-      <MessageCircle size={14}/> Chat
-      {unseenCount > 0 && (
-        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center animate-pulse">
-          {unseenCount > 9 ? "9+" : unseenCount}
-        </span>
-      )}
-    </button>
-  )}
-</div>
+          <div className="flex items-center gap-2">
+            {!chatOpen && (
+              <button 
+                onClick={() => setChatOpen(true)} 
+                className="relative px-3 py-1.5 text-xs bg-[#1a1a1a] rounded-lg flex gap-2 hover:bg-[#2a2a2a]"
+              >
+                <MessageCircle size={14}/> Chat
+                {unseenCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center animate-pulse">
+                    {unseenCount > 9 ? "9+" : unseenCount}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tab Bar */}
@@ -580,7 +691,7 @@ useEffect(() => {
 
         {/* Editor */}
         <div className="flex-1 flex overflow-hidden relative">
-          <div className="flex-1 bg-[#0a0a0a]">
+          <div className="flex-1 bg-[#0a0a0a] relative">
             <CodeEditor
               ref={editorRef}
               file={activeFile}
@@ -589,9 +700,10 @@ useEffect(() => {
               onSave={() => saveRef.current?.()}
             />
             
-            {/* Cursor Overlays */}
+            {/* ✅ Cursor Overlays - Now with userSelections */}
             <CursorOverlay 
               userCursors={userCursors}
+              userSelections={userSelections}
               activeFileId={activeFileId}
               onlineUsers={onlineUsers}
             />
@@ -617,23 +729,20 @@ useEffect(() => {
       </main>
 
       <RightChatPanel
-  isOpen={chatOpen}
-  onToggle={() => setChatOpen(!chatOpen)}
-  chatMode={chatMode}
-  setChatMode={setChatMode}
-  chatMessages={chatMessages}
-  chatInput={chatInput}
-  setChatInput={setChatInput}
-  onChatSend={onChatSend}
-  onTyping={handleTyping}
-  typingUsers={typingUsers}
-  onClearChat={() => setChatMessages([])}
-  myUserId={myUserId}
-  unseenCount={unseenCount}
-/>
-
-
-
+        isOpen={chatOpen}
+        onToggle={() => setChatOpen(!chatOpen)}
+        chatMode={chatMode}
+        setChatMode={setChatMode}
+        chatMessages={chatMessages}
+        chatInput={chatInput}
+        setChatInput={setChatInput}
+        onChatSend={onChatSend}
+        onTyping={handleTyping}
+        typingUsers={typingUsers}
+        onClearChat={() => setChatMessages([])}
+        myUserId={myUserId}
+        unseenCount={unseenCount}
+      />
       
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }

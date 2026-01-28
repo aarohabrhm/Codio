@@ -1,263 +1,264 @@
+// client/src/components/EditorPage/hooks/useCollaboration.js
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { io } from 'socket.io-client';
 
 export function useCollaboration(projectId) {
+  const socketRef = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [userCursors, setUserCursors] = useState({});
+  const [userSelections, setUserSelections] = useState({});
+  const [myColor, setMyColor] = useState('#4ECDC4');
   const [teamMessages, setTeamMessages] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
 
-  const wsRef = useRef(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState([]);
-  const [userCursors, setUserCursors] = useState({}); // Map of userId -> cursor position
-  const [myColor, setMyColor] = useState('#4ECDC4');
-  const reconnectTimeoutRef = useRef(null);
-
-  const connect = useCallback(() => {
+  useEffect(() => {
     if (!projectId) return;
 
-    // 1. Prevent duplicate connections if already connected or connecting
-    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+    const token = sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
+    if (!token) {
+      console.warn("No access token found");
       return;
     }
 
-    // 2. Get Token (Check Session first, then Local for "Remember Me")
-    const token = sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
-    if (!token) {
-        console.warn("No access token found, skipping WebSocket connection.");
-        return;
-    }
+    const socket = io('http://localhost:8000', {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
 
-    // 3. Initialize WebSocket
-    const ws = new WebSocket('ws://localhost:8000/ws/collab');
-    wsRef.current = ws;
+    socketRef.current = socket;
 
-    ws.onopen = () => {
-      console.log('✅ WebSocket connected');
+    socket.on('connect', () => {
+      console.log('✅ Socket.IO connected:', socket.id);
       setIsConnected(true);
+      socket.emit('join-project', { projectId, token });
+    });
 
-      const decoded = JSON.parse(atob(token.split('.')[1]));
-      ws.userId = decoded.id;        // ✅ store userId on socket
-      wsRef.current.userId = decoded.id;
-
-      ws.send(JSON.stringify({
-        type: 'join',
-        projectId,
-        token
-      }));
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-
-        switch (message.type) {
-          case 'users':
-            // Initial load of all users
-            setOnlineUsers(message.users);
-            setMyColor(message.yourColor);
-            break;
-
-          case 'user-joined':
-            // ✅ FIX 4: Safety Check - If the joined user is ME, ignore it.
-            // (I already know I'm here, and I got the full list via 'users' event)
-            if (message.user.userId === wsRef.current?.userId) return;
-
-            setOnlineUsers(prev => {
-                if (prev.some(u => u.userId === message.user.userId)) return prev;
-                return [...prev, message.user];
-            });
-            break;
-
-          case 'user-left':
-            // Remove user
-            setOnlineUsers(prev => prev.filter(u => u.userId !== message.userId));
-            // Remove their cursor
-            setUserCursors(prev => {
-              const next = { ...prev };
-              delete next[message.userId];
-              return next;
-            });
-            break;
-
-          case 'CHAT_MESSAGE':
-            setTeamMessages(prev => [...prev, message.payload]);
-
-            // ✅ Remove sender from typing list
-            setTypingUsers(prev =>
-              prev.filter(u => u !== message.payload.senderUsername)
-            );
-            break;
-
-          case "CHAT_SEEN": {
-            const { userId, messageIds } = message.payload;
-
-            setTeamMessages(prev =>
-              prev.map(msg => {
-                // Only update if this message was marked as seen
-                if (messageIds.includes(msg._id?.toString() || msg._id)) {
-                  const currentSeenBy = msg.seenBy || [];
-                  
-                  // Add userId if not already present
-                  if (!currentSeenBy.includes(userId)) {
-                    return {
-                      ...msg,
-                      seenBy: [...currentSeenBy, userId],
-                    };
-                  }
-                }
-                return msg;
-              })
-            );
-            break;
-          }
-
-          case 'CHAT_TYPING': {
-            const { username, typing, userId } = message.payload;
-
-            if (userId === wsRef.current?.userId) return;
-
-            setTypingUsers(prev => {
-              if (typing) {
-                return [...new Set([...prev, username])];
-              }
-              return prev.filter(u => u !== username);
-            });
-            break;
-          }
-
-          case 'cursor':
-            // Update specific user's cursor
-            setUserCursors(prev => ({
-              ...prev,
-              [message.userId]: { 
-                ...message.cursor, 
-                color: message.color 
-              }
-            }));
-            break;
-
-          case 'code-change':
-            // Optional: Handle incoming code changes here
-            break;
-
-          case 'file-select':
-            // Optional: Handle file selection events
-            break;
-
-          case 'error':
-            console.error('WebSocket backend error:', message.message);
-            break;
-        }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    };
-
-    ws.onclose = () => {
-      console.log('🔌 WebSocket disconnected');
+    socket.on('disconnect', () => {
+      console.log('🔌 Socket.IO disconnected');
       setIsConnected(false);
       setOnlineUsers([]);
       setUserCursors({});
-      
-      // Only attempt reconnect if the socket wasn't manually closed (ref still exists)
-      if (wsRef.current) {
-          reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('🔄 Attempting to reconnect...');
-            connect();
-          }, 3000);
-      }
-    };
+      setUserSelections({});
+    });
 
-    ws.onerror = (error) => {
-      // WebSocket errors are often silent in JS, console log helps debugging
-      console.error('WebSocket connection error:', error);
-    };
+    socket.on('project-users', ({ users, yourColor }) => {
+      console.log('📋 Current users:', users);
+      setOnlineUsers(users);
+      setMyColor(yourColor);
 
+      const cursors = {};
+      const selections = {};
+      users.forEach(user => {
+        if (user.cursor) cursors[user.socketId] = { ...user.cursor, color: user.color, username: user.username };
+        if (user.selection) selections[user.socketId] = { ...user.selection, color: user.color };
+      });
+      setUserCursors(cursors);
+      setUserSelections(selections);
+    });
+
+    socket.on('user-joined', (user) => {
+      console.log('👋 User joined:', user.username);
+      setOnlineUsers(prev => {
+        if (prev.some(u => u.socketId === user.socketId)) return prev;
+        return [...prev, user];
+      });
+    });
+
+    socket.on('user-left', ({ socketId }) => {
+      console.log('👋 User left:', socketId);
+      setOnlineUsers(prev => prev.filter(u => u.socketId !== socketId));
+      setUserCursors(prev => {
+        const next = { ...prev };
+        delete next[socketId];
+        return next;
+      });
+      setUserSelections(prev => {
+        const next = { ...prev };
+        delete next[socketId];
+        return next;
+      });
+    });
+
+    socket.on('cursor-update', ({ socketId, cursor, color, username }) => {
+      setUserCursors(prev => ({
+        ...prev,
+        [socketId]: { ...cursor, color, username }
+      }));
+    });
+
+    socket.on('selection-update', ({ socketId, selection, color }) => {
+      setUserSelections(prev => ({
+        ...prev,
+        [socketId]: { ...selection, color }
+      }));
+    });
+
+    socket.on('code-update', ({ socketId, userId, username, fileId, changes, content }) => {
+      window.dispatchEvent(new CustomEvent('remote-code-update', {
+        detail: { socketId, userId, username, fileId, changes, content }
+      }));
+    });
+
+    // ========== FILE OPERATIONS ==========
+    socket.on('file-created', ({ socketId, userId, username, parentId, fileData }) => {
+      console.log(`📄 ${username} created file:`, fileData.name);
+      window.dispatchEvent(new CustomEvent('remote-file-created', {
+        detail: { socketId, userId, username, parentId, fileData }
+      }));
+    });
+
+    socket.on('folder-created', ({ socketId, userId, username, parentId, folderData }) => {
+      console.log(`📁 ${username} created folder:`, folderData.name);
+      window.dispatchEvent(new CustomEvent('remote-folder-created', {
+        detail: { socketId, userId, username, parentId, folderData }
+      }));
+    });
+
+    socket.on('file-renamed', ({ socketId, userId, username, fileId, newName }) => {
+      console.log(`✏️ ${username} renamed file to:`, newName);
+      window.dispatchEvent(new CustomEvent('remote-file-renamed', {
+        detail: { socketId, userId, username, fileId, newName }
+      }));
+    });
+
+    socket.on('file-deleted', ({ socketId, userId, username, fileId }) => {
+      console.log(`🗑️ ${username} deleted file:`, fileId);
+      window.dispatchEvent(new CustomEvent('remote-file-deleted', {
+        detail: { socketId, userId, username, fileId }
+      }));
+    });
+
+    socket.on('user-file-change', ({ socketId, userId, username, fileId }) => {
+      console.log(`📄 ${username} opened file:`, fileId);
+    });
+
+    socket.on('chat-message', (message) => {
+      setTeamMessages(prev => [...prev, message]);
+      setTypingUsers(prev => prev.filter(u => u !== message.senderUsername));
+    });
+
+    socket.on('user-typing', ({ userId, username, typing }) => {
+      setTypingUsers(prev => {
+        if (typing) {
+          return [...new Set([...prev, username])];
+        }
+        return prev.filter(u => u !== username);
+      });
+    });
+
+    socket.on('messages-seen', ({ userId, messageIds }) => {
+      setTeamMessages(prev =>
+        prev.map(msg => {
+          if (messageIds.includes(msg._id?.toString() || msg._id)) {
+            const currentSeenBy = msg.seenBy || [];
+            if (!currentSeenBy.includes(userId)) {
+              return { ...msg, seenBy: [...currentSeenBy, userId] };
+            }
+          }
+          return msg;
+        })
+      );
+    });
+
+    socket.on('error', ({ message }) => {
+      console.error('❌ Socket error:', message);
+    });
+
+    return () => {
+      console.log('🧹 Cleaning up socket connection');
+      socket.disconnect();
+    };
   }, [projectId]);
 
-  // --- SEND FUNCTIONS ---
-
-  const sendChatTyping = useCallback((typing) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: "CHAT_TYPING",
-        payload: { typing }
-      }));
-    }
-  }, []);
-
-  const sendChatMessage = useCallback((text) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'CHAT_MESSAGE',
-        payload: {
-          text
-        }
-      }));
-    }
-  }, []);
-
+  // ========== SEND FUNCTIONS ==========
+  
   const sendCursor = useCallback((line, column, fileId) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'cursor',
-        line,
-        column,
-        fileId
-      }));
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('cursor-move', { fileId, line, column });
     }
   }, []);
 
-  const sendCodeChange = useCallback((fileId, changes) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'code-change',
-        fileId,
-        changes
-      }));
+  const sendSelection = useCallback((start, end, fileId) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('selection-change', { fileId, start, end });
+    }
+  }, []);
+
+  const sendCodeChange = useCallback((fileId, changes, content) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('code-change', { fileId, changes, content });
     }
   }, []);
 
   const sendFileSelect = useCallback((fileId) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'file-select',
-        fileId
-      }));
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('file-select', { fileId });
     }
   }, []);
 
-  // --- CLEANUP EFFECT ---
+  const sendFileCreated = useCallback((parentId, fileData) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('file-created', { parentId, fileData });
+    }
+  }, []);
 
-  useEffect(() => {
-    connect();
+  const sendFolderCreated = useCallback((parentId, folderData) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('folder-created', { parentId, folderData });
+    }
+  }, []);
 
-    return () => {
-      // 1. Clear any pending reconnection timer
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
+  const sendFileRenamed = useCallback((fileId, newName) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('file-renamed', { fileId, newName });
+    }
+  }, []);
 
-      // 2. Close WebSocket properly
-      if (wsRef.current) {
-        wsRef.current.onclose = null; 
-        
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-    };
-  }, [connect]);
+  const sendFileDeleted = useCallback((fileId) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('file-deleted', { fileId });
+    }
+  }, []);
+
+  const sendChatMessage = useCallback((text) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('chat-message', { text });
+    }
+  }, []);
+
+  const sendChatTyping = useCallback((typing) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('chat-typing', { typing });
+    }
+  }, []);
+
+  const markMessagesAsSeen = useCallback((messageIds) => {
+    if (socketRef.current?.connected && messageIds.length > 0) {
+      socketRef.current.emit('chat-seen', { messageIds });
+    }
+  }, []);
 
   return {
     isConnected,
     onlineUsers,
     userCursors,
+    userSelections,
     myColor,
     teamMessages,
     typingUsers,
     sendCursor,
+    sendSelection,
     sendCodeChange,
     sendFileSelect,
+    sendFileCreated,
+    sendFolderCreated,
+    sendFileRenamed,
+    sendFileDeleted,
     sendChatMessage,
     sendChatTyping,
+    markMessagesAsSeen
   };
 }
