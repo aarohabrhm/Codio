@@ -59,5 +59,30 @@ export default function Explorer({
     );
   };
 
-  return <div>{render("root")}</div>;
+  const root = files?.root;
+
+  if (!root) {
+    return null;
+  }
+
+
+  return (
+	<div className="px-3">
+      {root.children?.map((childId) => render(childId, 0))}
+      {creating && creating.parentId === "root" && (
+        <ExplorerItem
+          node={{ id: "__creating_root__", name: "", type: creating.type }}
+          depth={0}
+          active={false}
+          onToggle={() => {}}
+          onOpen={() => {}}
+          isCreating
+          onCommitCreate={(name) =>
+            onCommitCreate("root", creating.type, name)
+          }
+          onCancelCreate={onCancelCreate}
+        />
+      )}
+    </div>
+  );
 }
