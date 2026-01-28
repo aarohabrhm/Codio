@@ -12,6 +12,7 @@ import http from 'http';
 import projectRoutes from "./routes/projectRoutes.js";
 import executeRouter from './routes/execute.js';
 import chatRoutes from "./routes/chatRoutes.js";
+import {broadcastToProject } from "./websocket/collaborationServer.js";
 
 
 
@@ -47,6 +48,8 @@ app.get('/',(req,res)=>{
 app.use('/project-covers', express.static(path.join(__dirname, 'project-covers')));
 
 setupWebSocket(server);
+app.set("wssBroadcast", broadcastToProject);
+
 app.use('/',router);
 app.use('/api/auth',authRoutes)
 app.use('/api/projects', projectsRouter);

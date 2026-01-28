@@ -125,6 +125,37 @@ const myUserId = getMyUserId();
 }, [teamMessages, chatMode]);
 
 
+// Mark messages as seen when chat is open in team mode
+useEffect(() => {
+  if (!projectId || chatMode !== "team" || !chatOpen) return;
+
+  const markAsSeen = async () => {
+    try {
+      await axios.post(
+        `http://localhost:8000/api/chat/${projectId}/seen`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${
+              localStorage.getItem("accessToken") ||
+              sessionStorage.getItem("accessToken")
+            }`,
+          },
+        }
+      );
+    } catch (err) {
+      console.error("❌ Failed to mark messages as seen:", err);
+    }
+  };
+
+  // Mark as seen immediately when opening chat
+  markAsSeen();
+
+  // Also mark as seen when new messages arrive while chat is open
+  const interval = setInterval(markAsSeen, 2000);
+
+  return () => clearInterval(interval);
+}, [projectId, chatMode, chatOpen, teamMessages.length]);
 
 
   // Fetch project data

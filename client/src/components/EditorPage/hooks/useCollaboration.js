@@ -88,6 +88,29 @@ const [typingUsers, setTypingUsers] = useState([]);
     prev.filter(u => u !== message.payload.senderUsername)
   );
   break;
+  case "CHAT_SEEN": {
+  const { userId, messageIds } = message.payload;
+
+  setTeamMessages(prev =>
+    prev.map(msg => {
+      // Only update if this message was marked as seen
+      if (messageIds.includes(msg._id?.toString() || msg._id)) {
+        const currentSeenBy = msg.seenBy || [];
+        
+        // Add userId if not already present
+        if (!currentSeenBy.includes(userId)) {
+          return {
+            ...msg,
+            seenBy: [...currentSeenBy, userId],
+          };
+        }
+      }
+      return msg;
+    })
+  );
+  break;
+}
+
 
 
           case 'CHAT_TYPING': {

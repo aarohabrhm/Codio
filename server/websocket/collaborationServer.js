@@ -7,6 +7,7 @@ import ChatMessage from "../models/ChatMessage.js";
 
 const projects = new Map(); // Map<projectId, Set<clientInfo>>
 
+
 export function setupWebSocket(server) {
   const wss = new WebSocketServer({ 
     server,
@@ -128,6 +129,7 @@ export function setupWebSocket(server) {
           }, clientInfo);
         }
         // Handle TEAM CHAT MESSAGE
+// Handle TEAM CHAT MESSAGE
 else if (message.type === 'CHAT_MESSAGE') {
   if (!clientInfo) return;
 
@@ -140,22 +142,24 @@ else if (message.type === 'CHAT_MESSAGE') {
     senderUsername: clientInfo.username,
     senderAvatar: clientInfo.avatar,
     text,
-    mode: "team"
+    mode: "team",
+    seenBy: [clientInfo.userId], // ✅ Sender has seen it
   });
 
   // Broadcast to everyone in project (including sender)
   broadcast(clientInfo.projectId, {
     type: 'CHAT_MESSAGE',
     payload: {
-      _id: savedMessage._id,
+      _id: savedMessage._id.toString(),
       projectId: clientInfo.projectId,
       senderId: clientInfo.userId,
       senderUsername: clientInfo.username,
       senderAvatar: clientInfo.avatar,
       text: savedMessage.text,
-      createdAt: savedMessage.createdAt
+      createdAt: savedMessage.createdAt,
+      seenBy: [clientInfo.userId],
     }
-  },null);
+  }, null); // ✅ null = broadcast to ALL (including sender)
 }
 
 // Handle CHAT TYPING indicator
@@ -242,4 +246,17 @@ function generateColor(userId) {
   }, 0);
   
   return colors[Math.abs(hash) % colors.length];
+}
+
+export function broadcastToProject(projectId, message) {
+  const clients = projects.get(projectId);
+  if (!clients) return;
+
+  const data = JSON.stringify(message);
+
+  clients.forEach(client => {
+    if (client.ws.readyState === 1) {
+      client.ws.send(data);
+    }
+  });
 }
