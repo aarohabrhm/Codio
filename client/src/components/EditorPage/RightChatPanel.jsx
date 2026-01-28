@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { X, ChevronRight, MessageCircle, Send, Plus, Sparkles } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
+import { Smile } from "lucide-react";
+
 
 export default function RightChatPanel({
   isOpen,
@@ -14,6 +17,15 @@ export default function RightChatPanel({
   typingUsers,
   onClearChat,
 }) {
+  const myUserId = JSON.parse(
+  atob(
+    (localStorage.getItem("accessToken") ||
+     sessionStorage.getItem("accessToken"))
+      .split(".")[1]
+  )
+).id;
+
+const [showEmoji, setShowEmoji] = useState(false);
 
   const messagesEndRef = useRef(null);
   const [selectedModel, setSelectedModel] = useState("GPT-5");
@@ -83,54 +95,98 @@ export default function RightChatPanel({
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 custom-scrollbar">
-        {chatMessages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center mb-4">
-              <Sparkles size={24} className="text-white" />
-            </div>
-            <div className="text-lg font-medium text-white mb-2">How can I help you?</div>
-            <div className="text-sm text-gray-500">Ask me anything about your code</div>
+      {/* Messages Area */}
+<div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 custom-scrollbar">
+  {chatMessages.length === 0 ? (
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center mb-4">
+        <Sparkles size={24} className="text-white" />
+      </div>
+      <div className="text-lg font-medium text-white mb-2">
+        How can I help you?
+      </div>
+      <div className="text-sm text-gray-500">
+        Ask me anything about your code
+      </div>
+    </div>
+  ) : (
+    chatMessages.map((m, i) => {
+      const isMine =
+  chatMode === "ai"
+    ? m.role === "user"
+    : m.senderId === myUserId;
+
+
+      return (
+        <div
+          key={m._id || i}
+          className={`flex items-end gap-2 ${
+            isMine ? "justify-end" : "justify-start"
+          }`}
+        >
+          {/* Avatar (others only) */}
+          {!isMine && chatMode === "team" && (
+            <img
+              src={m.senderAvatar}
+              alt={m.senderUsername}
+              className="w-7 h-7 rounded-full object-cover"
+            />
+          )}
+
+          {/* Bubble */}
+          <div
+            className={`max-w-[75%] px-3 py-2 text-sm whitespace-pre-wrap ${
+              isMine
+                ? "bg-emerald-600 text-white rounded-2xl rounded-br-sm"
+                : "bg-[#1a1a1a] text-gray-200 rounded-2xl rounded-bl-sm"
+            }`}
+          >
+            {/* Username (others only) */}
+            {!isMine && chatMode === "team" && (
+              <div className="text-[11px] text-emerald-400 mb-0.5">
+                {m.senderUsername}
+              </div>
+            )}
+
+            {m.text}
           </div>
-        ) : (
-          chatMessages.map((m, i) => (
-            <div key={i} className="flex flex-col gap-1">
-              <div className="text-[11px] font-medium text-gray-500">
-  {chatMode === "ai"
-    ? m.role === "assistant"
-      ? "AI"
-      : "You"
-    : m.senderUsername}
+        </div>
+      );
+    })
+  )}
+  <div ref={messagesEndRef} />
 </div>
 
-
-
-              <div
-                className={`text-sm leading-relaxed rounded-lg px-3 py-2 max-w-full whitespace-pre-wrap ${
-                  m.role === "assistant"
-                    ? "bg-[#1a1a1a] text-gray-200"
-                    : "bg-[#0f2a1a] text-green-100 border border-[#1a3a2a]"
-                }`}
-              >
-                {m.text}
-              </div>
-            </div>
-          ))
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
       {/* Input Area */}
-      {typingUsers.length > 0 && chatMode === "team" && (
+{typingUsers.length > 0 && chatMode === "team" && (
   <div className="px-4 pb-2 text-xs text-gray-400 italic">
-    {typingUsers.join(", ")} typing...
+    {typingUsers[0]} is typing…
   </div>
 )}
+
 
       <div className="border-t border-[#1a1a1a] p-4">
         <div className="bg-[#0f0f0f] rounded-xl border border-[#1a1a1a] overflow-hidden">
           
           <div className="px-4 py-3">
+            {showEmoji && (
+  <div className="absolute bottom-20 right-4 z-50 shadow-xl">
+    {showEmoji && (
+  <div className="absolute bottom-20 right-4 z-50">
+    <EmojiPicker
+      theme="dark"
+      onEmojiClick={(emojiData) => {
+        setChatInput(prev => prev + emojiData.emoji);
+setShowEmoji(false);
+
+      }}
+    />
+  </div>
+)}
+
+  </div>
+)}
+
             <textarea
               value={chatInput}
               onChange={(e) => {
@@ -151,10 +207,13 @@ export default function RightChatPanel({
           </div>
           <div className="px-4 py-2 border-t border-[#1a1a1a] flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <span className="w-1 h-1 rounded-full bg-cyan-400"></span>
-                Agent
-              </span>
+              {chatMode === "ai" && (
+  <span className="flex items-center gap-1">
+    <span className="w-1 h-1 rounded-full bg-cyan-400"></span>
+    Agent
+  </span>
+)}
+
               
               {chatMode === "ai" && (
   <select
@@ -172,21 +231,23 @@ export default function RightChatPanel({
               
             </div>
             <div className="flex items-center gap-2">
-              <button
-                className="p-1.5 text-gray-500 hover:text-white rounded hover:bg-[#1a1a1a]"
-                onClick={onClearChat}
-                title="Clear chat"
-              >
-                <MessageCircle size={14} />
-              </button>
-              <button
-                className="p-1.5 text-cyan-400 hover:text-cyan-300 rounded hover:bg-[#1a1a1a]"
-                onClick={onChatSend}
-                title="Send message"
-              >
-                <Send size={14} />
-              </button>
-            </div>
+  <button
+    className="p-1.5 text-gray-400 hover:text-white"
+    onClick={() => setShowEmoji(prev => !prev)}
+    title="Emoji"
+  >
+    <Smile size={16} />
+  </button>
+
+  <button
+    className="p-1.5 text-cyan-400 hover:text-cyan-300 rounded hover:bg-[#1a1a1a]"
+    onClick={onChatSend}
+    title="Send"
+  >
+    <Send size={14} />
+  </button>
+</div>
+
           </div>
         </div>
       </div>

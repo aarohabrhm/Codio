@@ -43,6 +43,21 @@ const getLanguageFromExtension = (filename) => {
   return map[ext] || 'plaintext';
 };
 
+const getMyUserId = () => {
+  const token =
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken");
+
+  if (!token) return null;
+
+  try {
+    return JSON.parse(atob(token.split(".")[1])).id;
+  } catch {
+    return null;
+  }
+};
+
+
 export default function Editor() {
   const { projectId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -87,6 +102,7 @@ export default function Editor() {
 
   const editorRef = useRef(null);
   const saveRef = useRef(null);
+const myUserId = getMyUserId();
 
   // UI State
   const [chatMode, setChatMode] = useState("ai");
@@ -548,6 +564,7 @@ export default function Editor() {
   onTyping={handleTyping}
   typingUsers={typingUsers}
   onClearChat={() => setChatMessages([])}
+  myUserId={myUserId}
 />
 
 
