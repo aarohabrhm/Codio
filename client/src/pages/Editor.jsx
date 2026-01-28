@@ -105,6 +105,7 @@ export default function Editor() {
 const myUserId = getMyUserId();
 
   // UI State
+  const [unseenCount, setUnseenCount] = useState(0);
   const [chatMode, setChatMode] = useState("ai");
   const [activeLeftTab, setActiveLeftTab] = useState("files");
   const [searchQuery, setSearchQuery] = useState("");
@@ -160,9 +161,25 @@ useEffect(() => {
 
   // Fetch project data
 
+  // Track unseen messages in real-time
+useEffect(() => {
+  if (chatMode !== "team") return;
+
+  if (chatOpen) {
+    // Reset unseen count when chat is opened
+    setUnseenCount(0);
+  } else {
+    // Count unseen messages when chat is closed
+    const unseen = teamMessages.filter(
+      msg => msg.senderId !== myUserId && !msg.seenBy?.includes(myUserId)
+    ).length;
+    setUnseenCount(unseen);
+  }
+}, [teamMessages, chatOpen, chatMode, myUserId]);
 
 
-  useEffect(() => {
+// Load chat history and track unseen messages
+useEffect(() => {
   if (!projectId || chatMode !== "team") return;
 
   const loadChatHistory = async () => {
@@ -171,21 +188,31 @@ useEffect(() => {
         `http://localhost:8000/api/chat/${projectId}`,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            Authorization: `Bearer ${
+              localStorage.getItem("accessToken") ||
+              sessionStorage.getItem("accessToken")
+            }`,
           },
         }
       );
 
       // Load persisted messages FIRST
       setChatMessages(res.data);
+      
+      // Calculate unseen count
+      if (!chatOpen) {
+        const unseen = res.data.filter(
+          msg => msg.senderId !== myUserId && !msg.seenBy?.includes(myUserId)
+        ).length;
+        setUnseenCount(unseen);
+      }
     } catch (err) {
       console.error("❌ Failed to load chat history", err);
     }
   };
 
   loadChatHistory();
-}, [projectId, chatMode]);
-
+}, [projectId, chatMode, myUserId, chatOpen]);
 
 
 
@@ -503,16 +530,22 @@ useEffect(() => {
           </div>
            
           {/* Right: Chat */}
-          <div className="flex items-center gap-2">
-            {!chatOpen && (
-              <button 
-                onClick={() => setChatOpen(true)} 
-                className="px-3 py-1.5 text-xs bg-[#1a1a1a] rounded-lg flex gap-2 hover:bg-[#2a2a2a]"
-              >
-                <MessageCircle size={14}/> Chat
-              </button>
-            )}
-          </div>
+          {/* Right: Chat */}
+<div className="flex items-center gap-2">
+  {!chatOpen && (
+    <button 
+      onClick={() => setChatOpen(true)} 
+      className="relative px-3 py-1.5 text-xs bg-[#1a1a1a] rounded-lg flex gap-2 hover:bg-[#2a2a2a]"
+    >
+      <MessageCircle size={14}/> Chat
+      {unseenCount > 0 && (
+        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center animate-pulse">
+          {unseenCount > 9 ? "9+" : unseenCount}
+        </span>
+      )}
+    </button>
+  )}
+</div>
         </div>
 
         {/* Tab Bar */}
@@ -596,6 +629,7 @@ useEffect(() => {
   typingUsers={typingUsers}
   onClearChat={() => setChatMessages([])}
   myUserId={myUserId}
+  unseenCount={unseenCount}
 />
 
 

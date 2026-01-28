@@ -16,6 +16,7 @@ export default function RightChatPanel({
   typingUsers,
   onClearChat,
   myUserId,
+  unseenCount,
 }) {
   const [showEmoji, setShowEmoji] = useState(false);
   const messagesEndRef = useRef(null);
@@ -78,99 +79,114 @@ export default function RightChatPanel({
           </button>
 
           <button
-            onClick={() => setChatMode("team")}
-            className={`px-3 py-1 text-xs rounded-md transition ${
-              chatMode === "team"
-                ? "bg-emerald-500/20 text-emerald-400"
-                : "text-gray-500 hover:text-white"
-            }`}
-          >
-            Team
-          </button>
+  onClick={() => setChatMode("team")}
+  className={`relative px-3 py-1 text-xs rounded-md transition ${
+    chatMode === "team"
+      ? "bg-emerald-500/20 text-emerald-400"
+      : "text-gray-500 hover:text-white"
+  }`}
+>
+  Team
+  {chatMode !== "team" && unseenCount > 0 && (
+    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-semibold rounded-full flex items-center justify-center">
+      {unseenCount > 9 ? "9+" : unseenCount}
+    </span>
+  )}
+</button>
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 custom-scrollbar">
-        {chatMessages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center mb-4">
-              <Sparkles size={24} className="text-white" />
-            </div>
-            <div className="text-lg font-medium text-white mb-2">
-              How can I help you?
-            </div>
-            <div className="text-sm text-gray-500">
-              Ask me anything about your code
-            </div>
-          </div>
-        ) : (
-          chatMessages.map((m, i) => {
-            const isMine =
-              chatMode === "ai"
-                ? m.role === "user"
-                : m.senderId === myUserId;
+      {/* Messages Area */}
+<div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 custom-scrollbar">
+  {chatMessages.length === 0 ? (
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center mb-4">
+        <Sparkles size={24} className="text-white" />
+      </div>
+      <div className="text-lg font-medium text-white mb-2">
+        How can I help you?
+      </div>
+      <div className="text-sm text-gray-500">
+        Ask me anything about your code
+      </div>
+    </div>
+  ) : (
+    chatMessages.map((m, i) => {
+      const isMine =
+        chatMode === "ai"
+          ? m.role === "user"
+          : m.senderId === myUserId;
 
-            return (
-              <div
-                key={m._id || i}
-                className={`flex items-end gap-2 ${
-                  isMine ? "justify-end" : "justify-start"
-                }`}
-              >
-                {/* Avatar (others only) */}
-                {!isMine && chatMode === "team" && (
-                  <img
-                    src={m.senderAvatar}
-                    alt={m.senderUsername}
-                    className="w-7 h-7 rounded-full object-cover"
-                  />
-                )}
+      const isUnseen = !isMine && !m.seenBy?.includes(myUserId);
 
-                {/* Bubble */}
-                <div
-                  className={`max-w-[75%] px-3 py-2 text-sm whitespace-pre-wrap ${
-                    isMine
-                      ? "bg-emerald-600 text-white rounded-2xl rounded-br-sm"
-                      : "bg-[#1a1a1a] text-gray-200 rounded-2xl rounded-bl-sm"
+      return (
+        <div
+          key={m._id || i}
+          className={`flex items-end gap-2 ${
+            isMine ? "justify-end" : "justify-start"
+          }`}
+        >
+          {/* Avatar (others only) */}
+          {!isMine && chatMode === "team" && (
+            <div className="relative">
+              <img
+                src={m.senderAvatar}
+                alt={m.senderUsername}
+                className="w-7 h-7 rounded-full object-cover"
+              />
+              {isUnseen && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#0a0a0a]"></span>
+              )}
+            </div>
+          )}
+
+          {/* Bubble */}
+          <div
+            className={`max-w-[75%] px-3 py-2 text-sm whitespace-pre-wrap ${
+              isMine
+                ? "bg-emerald-600 text-white rounded-2xl rounded-br-sm"
+                : isUnseen
+                ? "bg-blue-600/30 text-gray-100 rounded-2xl rounded-bl-sm border border-blue-500/50"
+                : "bg-[#1a1a1a] text-gray-200 rounded-2xl rounded-bl-sm"
+            }`}
+          >
+            {/* Username (others only) */}
+            {!isMine && chatMode === "team" && (
+              <div className="text-[11px] text-emerald-400 mb-0.5">
+                {m.senderUsername}
+              </div>
+            )}
+
+            <div className="flex items-end gap-1">
+              <span>{m.text}</span>
+
+              {m.createdAt && (
+                <span className="text-[10px] text-gray-300 ml-2">
+                  {formatTime(m.createdAt)}
+                </span>
+              )}
+              
+              {/* Checkmarks for sent messages in team mode */}
+              {isMine && chatMode === "team" && (
+                <span
+                  className={`text-[11px] ml-1 ${
+                    (m.seenBy?.length || 0) > 1
+                      ? "text-blue-400"
+                      : "text-gray-400"
                   }`}
                 >
-                  {/* Username (others only) */}
-                  {!isMine && chatMode === "team" && (
-                    <div className="text-[11px] text-emerald-400 mb-0.5">
-                      {m.senderUsername}
-                    </div>
-                  )}
-
-                  <div className="flex items-end gap-1">
-                    <span>{m.text}</span>
-
-                    {m.createdAt && (
-                      <span className="text-[10px] text-gray-300 ml-2">
-                        {formatTime(m.createdAt)}
-                      </span>
-                    )}
-                    
-                    {/* Checkmarks for sent messages in team mode */}
-                    {isMine && chatMode === "team" && (
-                      <span
-                        className={`text-[11px] ml-1 ${
-                          (m.seenBy?.length || 0) > 1
-                            ? "text-blue-400"
-                            : "text-gray-400"
-                        }`}
-                      >
-                        {(m.seenBy?.length || 0) > 1 ? "✓✓" : "✓"}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+                  {(m.seenBy?.length || 0) > 1 ? "✓✓" : "✓"}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    })
+  )}
+  <div ref={messagesEndRef} />
+</div>
 
       {/* Typing Indicator */}
       {typingUsers.length > 0 && chatMode === "team" && (

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 export function useCollaboration(projectId) {
   const [teamMessages, setTeamMessages] = useState([]);
-const [typingUsers, setTypingUsers] = useState([]);
+  const [typingUsers, setTypingUsers] = useState([]);
 
   const wsRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -31,20 +31,19 @@ const [typingUsers, setTypingUsers] = useState([]);
     wsRef.current = ws;
 
     ws.onopen = () => {
-  console.log('✅ WebSocket connected');
-  setIsConnected(true);
+      console.log('✅ WebSocket connected');
+      setIsConnected(true);
 
-  const decoded = JSON.parse(atob(token.split('.')[1]));
-  ws.userId = decoded.id;        // ✅ store userId on socket
-  wsRef.current.userId = decoded.id;
+      const decoded = JSON.parse(atob(token.split('.')[1]));
+      ws.userId = decoded.id;        // ✅ store userId on socket
+      wsRef.current.userId = decoded.id;
 
-  ws.send(JSON.stringify({
-    type: 'join',
-    projectId,
-    token
-  }));
-};
-
+      ws.send(JSON.stringify({
+        type: 'join',
+        projectId,
+        token
+      }));
+    };
 
     ws.onmessage = (event) => {
       try {
@@ -79,39 +78,37 @@ const [typingUsers, setTypingUsers] = useState([]);
             });
             break;
 
-    
           case 'CHAT_MESSAGE':
-  setTeamMessages(prev => [...prev, message.payload]);
+            setTeamMessages(prev => [...prev, message.payload]);
 
-  // ✅ Remove sender from typing list
-  setTypingUsers(prev =>
-    prev.filter(u => u !== message.payload.senderUsername)
-  );
-  break;
-  case "CHAT_SEEN": {
-  const { userId, messageIds } = message.payload;
+            // ✅ Remove sender from typing list
+            setTypingUsers(prev =>
+              prev.filter(u => u !== message.payload.senderUsername)
+            );
+            break;
 
-  setTeamMessages(prev =>
-    prev.map(msg => {
-      // Only update if this message was marked as seen
-      if (messageIds.includes(msg._id?.toString() || msg._id)) {
-        const currentSeenBy = msg.seenBy || [];
-        
-        // Add userId if not already present
-        if (!currentSeenBy.includes(userId)) {
-          return {
-            ...msg,
-            seenBy: [...currentSeenBy, userId],
-          };
-        }
-      }
-      return msg;
-    })
-  );
-  break;
-}
+          case "CHAT_SEEN": {
+            const { userId, messageIds } = message.payload;
 
-
+            setTeamMessages(prev =>
+              prev.map(msg => {
+                // Only update if this message was marked as seen
+                if (messageIds.includes(msg._id?.toString() || msg._id)) {
+                  const currentSeenBy = msg.seenBy || [];
+                  
+                  // Add userId if not already present
+                  if (!currentSeenBy.includes(userId)) {
+                    return {
+                      ...msg,
+                      seenBy: [...currentSeenBy, userId],
+                    };
+                  }
+                }
+                return msg;
+              })
+            );
+            break;
+          }
 
           case 'CHAT_TYPING': {
             const { username, typing, userId } = message.payload;
@@ -119,16 +116,13 @@ const [typingUsers, setTypingUsers] = useState([]);
             if (userId === wsRef.current?.userId) return;
 
             setTypingUsers(prev => {
-            if (typing) {
-              return [...new Set([...prev, username])];
-            }
-            return prev.filter(u => u !== username);
+              if (typing) {
+                return [...new Set([...prev, username])];
+              }
+              return prev.filter(u => u !== username);
             });
             break;
           }
-
-
-
 
           case 'cursor':
             // Update specific user's cursor
@@ -183,30 +177,24 @@ const [typingUsers, setTypingUsers] = useState([]);
   // --- SEND FUNCTIONS ---
 
   const sendChatTyping = useCallback((typing) => {
-  if (wsRef.current?.readyState === WebSocket.OPEN) {
-    wsRef.current.send(JSON.stringify({
-      type: "CHAT_TYPING",
-      payload: { typing }
-    }));
-  }
-}, []);
-
-
-
-
-
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: "CHAT_TYPING",
+        payload: { typing }
+      }));
+    }
+  }, []);
 
   const sendChatMessage = useCallback((text) => {
-  if (wsRef.current?.readyState === WebSocket.OPEN) {
-    wsRef.current.send(JSON.stringify({
-      type: 'CHAT_MESSAGE',
-      payload: {
-        text
-      }
-    }));
-  }
-}, []);
-
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'CHAT_MESSAGE',
+        payload: {
+          text
+        }
+      }));
+    }
+  }, []);
 
   const sendCursor = useCallback((line, column, fileId) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -260,17 +248,16 @@ const [typingUsers, setTypingUsers] = useState([]);
   }, [connect]);
 
   return {
-  isConnected,
-  onlineUsers,
-  userCursors,
-  myColor,
-  teamMessages,
-  typingUsers,
-  sendCursor,
-  sendCodeChange,
-  sendFileSelect,
-  sendChatMessage,
-  sendChatTyping,
-};
-
+    isConnected,
+    onlineUsers,
+    userCursors,
+    myColor,
+    teamMessages,
+    typingUsers,
+    sendCursor,
+    sendCodeChange,
+    sendFileSelect,
+    sendChatMessage,
+    sendChatTyping,
+  };
 }
