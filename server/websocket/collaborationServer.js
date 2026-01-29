@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
 import ChatMessage from "../models/ChatMessage.js";
 
-const projects = new Map(); // Map<projectId, Map<socketId, clientInfo>>
+const projects = new Map();
 
 export function setupWebSocket(server) {
   const io = new Server(server, {
@@ -19,7 +19,6 @@ export function setupWebSocket(server) {
     console.log('🔌 Client connected:', socket.id);
     let clientInfo = null;
 
-    // ========== JOIN PROJECT ==========
     socket.on('join-project', async ({ projectId, token }) => {
       try {
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
@@ -83,7 +82,6 @@ export function setupWebSocket(server) {
       }
     });
 
-    // ========== CURSOR MOVEMENT ==========
     socket.on('cursor-move', ({ fileId, line, column }) => {
       if (!clientInfo) return;
 
@@ -99,7 +97,6 @@ export function setupWebSocket(server) {
       });
     });
 
-    // ========== TEXT SELECTION ==========
     socket.on('selection-change', ({ fileId, start, end }) => {
       if (!clientInfo) return;
 
@@ -113,11 +110,9 @@ export function setupWebSocket(server) {
       });
     });
 
-    // ========== CODE CHANGES (Real-time typing) ==========
     socket.on('code-change', ({ fileId, changes, content }) => {
       if (!clientInfo) return;
 
-      // Broadcast to all others in project instantly
       socket.to(clientInfo.projectId).emit('code-update', {
         socketId: socket.id,
         userId: clientInfo.userId,
@@ -128,9 +123,6 @@ export function setupWebSocket(server) {
       });
     });
 
-    // ========== FILE OPERATIONS ==========
-    
-    // File Created
     socket.on('file-created', ({ parentId, fileData }) => {
       if (!clientInfo) return;
 
@@ -143,7 +135,6 @@ export function setupWebSocket(server) {
       });
     });
 
-    // Folder Created
     socket.on('folder-created', ({ parentId, folderData }) => {
       if (!clientInfo) return;
 
@@ -156,7 +147,6 @@ export function setupWebSocket(server) {
       });
     });
 
-    // File Renamed
     socket.on('file-renamed', ({ fileId, newName }) => {
       if (!clientInfo) return;
 
@@ -169,7 +159,6 @@ export function setupWebSocket(server) {
       });
     });
 
-    // File Deleted
     socket.on('file-deleted', ({ fileId }) => {
       if (!clientInfo) return;
 
@@ -181,7 +170,6 @@ export function setupWebSocket(server) {
       });
     });
 
-    // ========== FILE SELECTION ==========
     socket.on('file-select', ({ fileId }) => {
       if (!clientInfo) return;
 
@@ -195,7 +183,6 @@ export function setupWebSocket(server) {
       });
     });
 
-    // ========== TEAM CHAT MESSAGE ==========
     socket.on('chat-message', async ({ text }) => {
       if (!clientInfo) return;
 
@@ -226,7 +213,6 @@ export function setupWebSocket(server) {
       }
     });
 
-    // ========== CHAT TYPING ==========
     socket.on('chat-typing', ({ typing }) => {
       if (!clientInfo) return;
 
@@ -237,7 +223,6 @@ export function setupWebSocket(server) {
       });
     });
 
-    // ========== CHAT SEEN ==========
     socket.on('chat-seen', async ({ messageIds }) => {
       if (!clientInfo) return;
 
@@ -261,7 +246,6 @@ export function setupWebSocket(server) {
       }
     });
 
-    // ========== DISCONNECT ==========
     socket.on('disconnect', () => {
       if (clientInfo) {
         const { projectId, userId, username } = clientInfo;

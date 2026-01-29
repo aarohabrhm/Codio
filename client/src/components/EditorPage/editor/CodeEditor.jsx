@@ -28,9 +28,8 @@ const CodeEditor = forwardRef(
   ({ file, onChange, onCursorChange, onSave }, ref) => {
     const editorRef = useRef(null);
     const monacoRef = useRef(null);
-
+    const currentFileId = useRef(null);
     const isRemoteChange = useRef(false);
-    const ignoreNextChange = useRef(false);
 
     /* ---------- Expose methods ---------- */
     useImperativeHandle(ref, () => ({
@@ -79,16 +78,14 @@ const CodeEditor = forwardRef(
 
       /* Content tracking */
       editor.onDidChangeModelContent(() => {
-        if (ignoreNextChange.current) {
-          ignoreNextChange.current = false;
+        if (isRemoteChange.current) {
+          isRemoteChange.current = false;
           return;
         }
 
-        if (!isRemoteChange.current && onChange) {
+        if (onChange) {
           onChange(editor.getValue());
         }
-
-        isRemoteChange.current = false;
       });
 
       /* Ctrl / Cmd + S */
@@ -103,18 +100,23 @@ const CodeEditor = forwardRef(
       const handleRemoteUpdate = (e) => {
         const { fileId, content } = e.detail;
 
-        if (file?.id !== fileId || !editorRef.current) return;
+        // CRITICAL: Only update if this is MY currently active file
+        if (!file || file.id !== fileId || !editorRef.current) {
+          return;
+        }
 
         const current = editorRef.current.getValue();
         if (current === content) return;
 
+        console.log(`🔄 Applying remote update to file: ${fileId}`);
+
         isRemoteChange.current = true;
-        ignoreNextChange.current = true;
 
         const position = editorRef.current.getPosition();
         const scrollTop = editorRef.current.getScrollTop();
 
         editorRef.current.setValue(content);
+        
         if (position) editorRef.current.setPosition(position);
         editorRef.current.setScrollTop(scrollTop);
       };
@@ -128,13 +130,15 @@ const CodeEditor = forwardRef(
     useEffect(() => {
       if (!editorRef.current || !file) return;
 
-      const current = editorRef.current.getValue();
-      if (current !== (file.content || "")) {
+      // Only update if we're switching to a different file
+      if (currentFileId.current !== file.id) {
+        console.log(`📂 Switching to file: ${file.id}`);
+        currentFileId.current = file.id;
+
         isRemoteChange.current = true;
-        ignoreNextChange.current = true;
         editorRef.current.setValue(file.content || "");
       }
-    }, [file?.id]);
+    }, [file?.id, file?.content]);
 
     if (!file) {
       return (
@@ -147,7 +151,8 @@ const CodeEditor = forwardRef(
     return (
       <Editor
         height="100%"
-        value={file.content || ""}
+        key={file.id}
+        defaultValue={file.content || ""}
         language={getLanguageFromName(file.name)}
         beforeMount={handleBeforeMount}
         onMount={handleMount}

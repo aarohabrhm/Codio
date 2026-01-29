@@ -12,13 +12,12 @@ export default function CursorOverlay({ userCursors, userSelections, activeFileI
       const newPositions = {};
 
       Object.entries(userCursors).forEach(([socketId, cursor]) => {
+        // CRITICAL: Only show cursors for the SAME file
         if (cursor.fileId !== activeFileId) return;
 
-        // Get the Monaco editor container
         const monacoContainer = document.querySelector('.monaco-editor');
         if (!monacoContainer) return;
 
-        // Find all lines
         const lines = editor.querySelectorAll('.view-line');
         const lineElement = lines[cursor.line - 1];
 
@@ -26,8 +25,7 @@ export default function CursorOverlay({ userCursors, userSelections, activeFileI
           const lineRect = lineElement.getBoundingClientRect();
           const containerRect = monacoContainer.getBoundingClientRect();
           
-          // More accurate character width calculation
-          const charWidth = 7.22; // Monaco editor default
+          const charWidth = 7.22;
           const leftOffset = (cursor.column - 1) * charWidth;
 
           newPositions[socketId] = {
@@ -44,7 +42,6 @@ export default function CursorOverlay({ userCursors, userSelections, activeFileI
 
     updateCursorPositions();
     
-    // Update more frequently for smoother cursor movement
     const interval = setInterval(updateCursorPositions, 50);
 
     return () => clearInterval(interval);

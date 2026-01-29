@@ -97,6 +97,8 @@ export function useCollaboration(projectId) {
     });
 
     socket.on('code-update', ({ socketId, userId, username, fileId, changes, content }) => {
+      console.log(`📝 Received code update for file ${fileId} from ${username}`);
+      
       window.dispatchEvent(new CustomEvent('remote-code-update', {
         detail: { socketId, userId, username, fileId, changes, content }
       }));
@@ -189,6 +191,7 @@ export function useCollaboration(projectId) {
 
   const sendCodeChange = useCallback((fileId, changes, content) => {
     if (socketRef.current?.connected) {
+      console.log(`📤 Sending code update for file ${fileId}`);
       socketRef.current.emit('code-change', { fileId, changes, content });
     }
   }, []);

@@ -75,8 +75,6 @@ export default function Editor() {
     saveFile,
   } = useFileManager(EMPTY_PROJECT_FILES, []);
 
-
-
   const {
     isConnected,
     onlineUsers,
@@ -89,16 +87,15 @@ export default function Editor() {
     sendSelection,
     sendCodeChange,
     sendFileSelect,
-     sendFileCreated,      // ✅ NEW
-  sendFolderCreated,    // ✅ NEW
-  sendFileRenamed,      // ✅ NEW
-  sendFileDeleted,
+    sendFileCreated,
+    sendFolderCreated,
+    sendFileRenamed,
+    sendFileDeleted,
     sendChatMessage,
     sendChatTyping,
     markMessagesAsSeen
   } = useCollaboration(projectId);
 
-  
   const editorRef = useRef(null);
   const saveRef = useRef(null);
   const myUserId = getMyUserId();
@@ -117,134 +114,7 @@ export default function Editor() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
 
-
-    const deleteNode = useCallback((fileId) => {
-  setFiles(prev => {
-    const newFiles = { ...prev };
-    const file = newFiles[fileId];
-    
-    if (file && file.parent) {
-      const parent = newFiles[file.parent];
-      if (parent) {
-        parent.children = parent.children.filter(id => id !== fileId);
-      }
-    }
-    
-    delete newFiles[fileId];
-    return newFiles;
-  });
-  
-  sendFileDeleted(fileId);
-}, [setFiles, sendFileDeleted]);
-
-
-  const createFile = useCallback((parentId, name) => {
-  const fileData = {
-    id: `file-${Date.now()}`,
-    name,
-    type: 'file',
-    parent: parentId,
-    content: ''
-  };
-  
-  // Local update
-  setFiles(prev => ({
-    ...prev,
-    [fileData.id]: fileData,
-    [parentId]: {
-      ...prev[parentId],
-      children: [...(prev[parentId]?.children || []), fileData.id]
-    }
-  }));
-  
-  // Broadcast to others
-  sendFileCreated(parentId, fileData);
-}, [setFiles, sendFileCreated]);
-  // ✅ UPDATED: Socket.IO Collaboration with new methods
-  const createFolder = useCallback((parentId, name) => {
-  const folderData = {
-    id: `folder-${Date.now()}`,
-    name,
-    type: 'folder',
-    parent: parentId,
-    children: [],
-    isOpen: false
-  };
-  
-  // Local update
-  setFiles(prev => ({
-    ...prev,
-    [folderData.id]: folderData,
-    [parentId]: {
-      ...prev[parentId],
-      children: [...(prev[parentId]?.children || []), folderData.id]
-    }
-  }));
-  
-  // Broadcast to others
-  sendFolderCreated(parentId, folderData);
-}, [setFiles, sendFolderCreated]);
-
-
-
-const renameNode = useCallback((fileId, newName) => {
-  setFiles(prev => ({
-    ...prev,
-    [fileId]: {
-      ...prev[fileId],
-      name: newName
-    }
-  }));
-  
-  sendFileRenamed(fileId, newName);
-}, [setFiles, sendFileRenamed]);
-
-
-  // Sync team messages to chat
-  useEffect(() => {
-    if (chatMode !== "team") return;
-    setChatMessages(teamMessages);
-  }, [teamMessages, chatMode]);
-
-
-useEffect(() => {
-  const handleFileCreated = (event) => {
-    const { parentId, fileData } = event.detail;
-    setFiles(prev => ({
-      ...prev,
-      [fileData.id]: fileData,
-      [parentId]: {
-        ...prev[parentId],
-        children: [...(prev[parentId]?.children || []), fileData.id]
-      }
-    }));
-  };
-
-  const handleFolderCreated = (event) => {
-    const { parentId, folderData } = event.detail;
-    setFiles(prev => ({
-      ...prev,
-      [folderData.id]: folderData,
-      [parentId]: {
-        ...prev[parentId],
-        children: [...(prev[parentId]?.children || []), folderData.id]
-      }
-    }));
-  };
-
-  const handleFileRenamed = (event) => {
-    const { fileId, newName } = event.detail;
-    setFiles(prev => ({
-      ...prev,
-      [fileId]: {
-        ...prev[fileId],
-        name: newName
-      }
-    }));
-  };
-
-  const handleFileDeleted = (event) => {
-    const { fileId } = event.detail;
+  const deleteNode = useCallback((fileId) => {
     setFiles(prev => {
       const newFiles = { ...prev };
       const file = newFiles[fileId];
@@ -259,26 +129,140 @@ useEffect(() => {
       delete newFiles[fileId];
       return newFiles;
     });
-  };
+    
+    sendFileDeleted(fileId);
+  }, [setFiles, sendFileDeleted]);
 
-  window.addEventListener('remote-file-created', handleFileCreated);
-  window.addEventListener('remote-folder-created', handleFolderCreated);
-  window.addEventListener('remote-file-renamed', handleFileRenamed);
-  window.addEventListener('remote-file-deleted', handleFileDeleted);
+  const createFile = useCallback((parentId, name) => {
+    const fileData = {
+      id: `file-${Date.now()}`,
+      name,
+      type: 'file',
+      parent: parentId,
+      content: ''
+    };
+    
+    setFiles(prev => ({
+      ...prev,
+      [fileData.id]: fileData,
+      [parentId]: {
+        ...prev[parentId],
+        children: [...(prev[parentId]?.children || []), fileData.id]
+      }
+    }));
+    
+    sendFileCreated(parentId, fileData);
+  }, [setFiles, sendFileCreated]);
 
-  return () => {
-    window.removeEventListener('remote-file-created', handleFileCreated);
-    window.removeEventListener('remote-folder-created', handleFolderCreated);
-    window.removeEventListener('remote-file-renamed', handleFileRenamed);
-    window.removeEventListener('remote-file-deleted', handleFileDeleted);
-  };
-}, [setFiles]);
+  const createFolder = useCallback((parentId, name) => {
+    const folderData = {
+      id: `folder-${Date.now()}`,
+      name,
+      type: 'folder',
+      parent: parentId,
+      children: [],
+      isOpen: false
+    };
+    
+    setFiles(prev => ({
+      ...prev,
+      [folderData.id]: folderData,
+      [parentId]: {
+        ...prev[parentId],
+        children: [...(prev[parentId]?.children || []), folderData.id]
+      }
+    }));
+    
+    sendFolderCreated(parentId, folderData);
+  }, [setFiles, sendFolderCreated]);
 
+  const renameNode = useCallback((fileId, newName) => {
+    setFiles(prev => ({
+      ...prev,
+      [fileId]: {
+        ...prev[fileId],
+        name: newName
+      }
+    }));
+    
+    sendFileRenamed(fileId, newName);
+  }, [setFiles, sendFileRenamed]);
 
+  // Sync team messages to chat
+  useEffect(() => {
+    if (chatMode !== "team") return;
+    setChatMessages(teamMessages);
+  }, [teamMessages, chatMode]);
 
+  // Listen for remote file operations
+  useEffect(() => {
+    const handleFileCreated = (event) => {
+      const { parentId, fileData } = event.detail;
+      setFiles(prev => ({
+        ...prev,
+        [fileData.id]: fileData,
+        [parentId]: {
+          ...prev[parentId],
+          children: [...(prev[parentId]?.children || []), fileData.id]
+        }
+      }));
+    };
 
+    const handleFolderCreated = (event) => {
+      const { parentId, folderData } = event.detail;
+      setFiles(prev => ({
+        ...prev,
+        [folderData.id]: folderData,
+        [parentId]: {
+          ...prev[parentId],
+          children: [...(prev[parentId]?.children || []), folderData.id]
+        }
+      }));
+    };
 
-  // ✅ UPDATED: Mark messages as seen using Socket.IO
+    const handleFileRenamed = (event) => {
+      const { fileId, newName } = event.detail;
+      setFiles(prev => ({
+        ...prev,
+        [fileId]: {
+          ...prev[fileId],
+          name: newName
+        }
+      }));
+    };
+
+    const handleFileDeleted = (event) => {
+      const { fileId } = event.detail;
+      setFiles(prev => {
+        const newFiles = { ...prev };
+        const file = newFiles[fileId];
+        
+        if (file && file.parent) {
+          const parent = newFiles[file.parent];
+          if (parent) {
+            parent.children = parent.children.filter(id => id !== fileId);
+          }
+        }
+        
+        delete newFiles[fileId];
+        return newFiles;
+      });
+    };
+
+    window.addEventListener('remote-file-created', handleFileCreated);
+    window.addEventListener('remote-folder-created', handleFolderCreated);
+    window.addEventListener('remote-file-renamed', handleFileRenamed);
+    window.addEventListener('remote-file-deleted', handleFileDeleted);
+
+    return () => {
+      window.removeEventListener('remote-file-created', handleFileCreated);
+      window.removeEventListener('remote-folder-created', handleFolderCreated);
+      window.removeEventListener('remote-file-renamed', handleFileRenamed);
+      window.removeEventListener('remote-file-deleted', handleFileDeleted);
+    };
+  }, [setFiles]);
+
+  // Mark messages as seen
   useEffect(() => {
     if (!projectId || chatMode !== "team" || !chatOpen) return;
 
@@ -292,7 +276,7 @@ useEffect(() => {
     }
   }, [projectId, chatMode, chatOpen, teamMessages, myUserId, markMessagesAsSeen]);
 
-  // Track unseen messages in real-time
+  // Track unseen messages
   useEffect(() => {
     if (chatMode !== "team") return;
 
@@ -306,7 +290,7 @@ useEffect(() => {
     }
   }, [teamMessages, chatOpen, chatMode, myUserId]);
 
-  // Load chat history and track unseen messages
+  // Load chat history
   useEffect(() => {
     if (!projectId || chatMode !== "team") return;
 
@@ -392,9 +376,10 @@ useEffect(() => {
       let updatedFiles = { ...files };
 
       if (activeFileId && editorRef.current) {
+        const currentContent = editorRef.current.getContent();
         updatedFiles[activeFileId] = {
           ...updatedFiles[activeFileId],
-          content: editorRef.current.getContent(),
+          content: currentContent,
         };
       }
 
@@ -423,22 +408,29 @@ useEffect(() => {
     saveRef.current = handleSave;
   }, [handleSave]);
 
-  // ✅ Handle cursor movement - Send via Socket.IO
+  // Handle cursor movement
   const handleCursorChange = useCallback((line, column) => {
     if (activeFileId) {
       sendCursor(line, column, activeFileId);
     }
   }, [activeFileId, sendCursor]);
 
-  // ✅ UPDATED: Handle content change - Send real-time updates via Socket.IO
+  // CRITICAL FIX: Handle content change - Only update the ACTIVE file
   const handleContentChange = useCallback((content) => {
-    updateContent(content);
+    if (!activeFileId) return;
+
+    // Update local state for the ACTIVE file only
+    setFiles(prev => ({
+      ...prev,
+      [activeFileId]: {
+        ...prev[activeFileId],
+        content: content
+      }
+    }));
     
-    // Send real-time code changes to other users
-    if (activeFileId) {
-      sendCodeChange(activeFileId, null, content);
-    }
-  }, [updateContent, activeFileId, sendCodeChange]);
+    // Send to other users
+    sendCodeChange(activeFileId, null, content);
+  }, [activeFileId, setFiles, sendCodeChange]);
 
   // Notify when file is opened
   useEffect(() => {
@@ -595,7 +587,6 @@ useEffect(() => {
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top Toolbar */}
         <div className="h-10 bg-[#0a0a0a] border-b border-[#1a1a1a] flex items-center justify-between px-4">
-          {/* Left: Status & Save */}
           <div className="flex items-center gap-4">
             <div className="text-xs text-gray-500 flex items-center gap-2">
               {isSaving ? (
@@ -607,7 +598,6 @@ useEffect(() => {
 
             <div className="w-px h-5 bg-[#2a2a2a]" />
 
-            {/* Online Users */}
             <OnlineUsers 
               onlineUsers={onlineUsers}
               isConnected={isConnected}
@@ -615,7 +605,6 @@ useEffect(() => {
             />
           </div>
 
-          {/* Center: Editor Actions */}
           <div className="flex items-center gap-1">
             <button 
               onClick={handleUndo} 
@@ -641,7 +630,6 @@ useEffect(() => {
             </button>
           </div>
            
-          {/* Right: Chat */}
           <div className="flex items-center gap-2">
             {!chatOpen && (
               <button 
@@ -700,7 +688,6 @@ useEffect(() => {
               onSave={() => saveRef.current?.()}
             />
             
-            {/* ✅ Cursor Overlays - Now with userSelections */}
             <CursorOverlay 
               userCursors={userCursors}
               userSelections={userSelections}
