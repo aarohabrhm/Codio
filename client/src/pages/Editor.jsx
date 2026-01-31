@@ -15,6 +15,7 @@ import CursorOverlay from "../components/EditorPage/CursorOverlay";
 // Hooks
 import { useFileManager } from "../components/EditorPage/hooks";
 import { useCollaboration } from "../components/EditorPage/hooks/useCollaboration";
+import { useTheme } from "../context/ThemeContext";
 
 const EMPTY_PROJECT_FILES = {
   root: {
@@ -58,6 +59,7 @@ export default function Editor() {
   const { projectId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const { isDark } = useTheme();
 
   // File management
   const {
@@ -104,6 +106,7 @@ export default function Editor() {
   const [unseenCount, setUnseenCount] = useState(0);
   const [chatMode, setChatMode] = useState("ai");
   const [activeLeftTab, setActiveLeftTab] = useState("files");
+  const [leftPanelVisible, setLeftPanelVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState([]);
@@ -558,37 +561,61 @@ export default function Editor() {
 
   if (isLoading) {
     return (
-      <div className="h-screen w-full bg-[#0a0a0a] flex flex-col items-center justify-center text-gray-400 gap-4">
+      <div className={`h-screen w-full flex flex-col items-center justify-center gap-4 ${
+        isDark ? 'bg-[#0a0a0a] text-gray-400' : 'bg-gray-50 text-gray-500'
+      }`}>
         <Loader2 className="animate-spin w-8 h-8 text-blue-500" />
         <p>Loading project environment...</p>
       </div>
     );
   }
 
+  // Handle tab change with toggle logic (VS Code-like behavior)
+  const handleTabChange = (tab) => {
+    if (tab === activeLeftTab) {
+      // Clicking the same tab toggles panel visibility
+      setLeftPanelVisible((prev) => !prev);
+    } else {
+      // Clicking a different tab switches to it and shows the panel
+      setActiveLeftTab(tab);
+      setLeftPanelVisible(true);
+    }
+  };
+
   return (
-    <div className="flex h-screen w-full bg-[#0a0a0a] text-gray-200">
-      <Sidebar activeTab={activeLeftTab} onTabChange={setActiveLeftTab} />
-      
-      <LeftPanel
-        tab={activeLeftTab}
-        files={files}
-        activeFileId={activeFileId}
-        onToggle={toggleFolder}
-        onOpen={openFile}
-        onCreateFile={createFile}
-        onCreateFolder={createFolder}
-        onRename={renameNode}
-        onDelete={deleteNode}
-        modifiedFiles={modifiedFiles}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
+    <div className={`flex h-screen w-full ${isDark ? 'bg-[#0a0a0a] text-gray-200' : 'bg-gray-50 text-gray-800'}`}>
+      <Sidebar 
+        activeTab={activeLeftTab} 
+        onTabChange={handleTabChange}
+        isPanelVisible={leftPanelVisible}
       />
+      
+      {leftPanelVisible && (
+        <LeftPanel
+          tab={activeLeftTab}
+          files={files}
+          activeFileId={activeFileId}
+          onToggle={toggleFolder}
+          onOpen={openFile}
+          onCreateFile={createFile}
+          onCreateFolder={createFolder}
+          onRename={renameNode}
+          onDelete={deleteNode}
+          modifiedFiles={modifiedFiles}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
+      )}
 
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top Toolbar */}
-        <div className="h-10 bg-[#0a0a0a] border-b border-[#1a1a1a] flex items-center justify-between px-4">
+        <div className={`h-10 border-b flex items-center justify-between px-4 ${
+          isDark 
+            ? 'bg-[#0a0a0a] border-[#1a1a1a]' 
+            : 'bg-white border-gray-200'
+        }`}>
           <div className="flex items-center gap-4">
-            <div className="text-xs text-gray-500 flex items-center gap-2">
+            <div className={`text-xs flex items-center gap-2 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
               {isSaving ? (
                 <span className="text-blue-400 flex items-center gap-1">
                   <Loader2 size={10} className="animate-spin"/> Saving...
@@ -596,7 +623,7 @@ export default function Editor() {
               ) : "Ready"}
             </div>
 
-            <div className="w-px h-5 bg-[#2a2a2a]" />
+            <div className={`w-px h-5 ${isDark ? 'bg-[#2a2a2a]' : 'bg-gray-200'}`} />
 
             <OnlineUsers 
               onlineUsers={onlineUsers}
@@ -608,19 +635,19 @@ export default function Editor() {
           <div className="flex items-center gap-1">
             <button 
               onClick={handleUndo} 
-              className="p-1.5 text-gray-400 hover:text-white rounded"
+              className={`p-1.5 rounded ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
               title="Undo (Ctrl+Z)"
             >
               <Undo2 size={16}/>
             </button>
             <button 
               onClick={handleRedo} 
-              className="p-1.5 text-gray-400 hover:text-white rounded"
+              className={`p-1.5 rounded ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
               title="Redo (Ctrl+Y)"
             >
               <Redo2 size={16}/>
             </button>
-            <div className="w-px h-5 bg-[#2a2a2a] mx-2" />
+            <div className={`w-px h-5 mx-2 ${isDark ? 'bg-[#2a2a2a]' : 'bg-gray-200'}`} />
             <button 
               onClick={handleRunCode} 
               disabled={!activeFile} 
@@ -634,7 +661,11 @@ export default function Editor() {
             {!chatOpen && (
               <button 
                 onClick={() => setChatOpen(true)} 
-                className="relative px-3 py-1.5 text-xs bg-[#1a1a1a] rounded-lg flex gap-2 hover:bg-[#2a2a2a]"
+                className={`relative px-3 py-1.5 text-xs rounded-lg flex gap-2 ${
+                  isDark 
+                    ? 'bg-[#1a1a1a] hover:bg-[#2a2a2a]' 
+                    : 'bg-gray-100 hover:bg-gray-200'
+                }`}
               >
                 <MessageCircle size={14}/> Chat
                 {unseenCount > 0 && (
@@ -648,7 +679,7 @@ export default function Editor() {
         </div>
 
         {/* Tab Bar */}
-        <div className="bg-[#0f0f0f] border-b border-[#1a1a1a]">
+        <div className={`border-b ${isDark ? 'bg-[#0f0f0f] border-[#1a1a1a]' : 'bg-gray-100 border-gray-200'}`}>
           <div className="flex items-center">
             {openFiles.map((id) => {
               const file = files[id];
@@ -657,17 +688,21 @@ export default function Editor() {
                 <div 
                   key={id} 
                   onClick={() => setActiveFileId(id)} 
-                  className={`group flex items-center gap-2 px-4 py-2 cursor-pointer border-r border-[#1a1a1a] ${
+                  className={`group flex items-center gap-2 px-4 py-2 cursor-pointer border-r ${
+                    isDark ? 'border-[#1a1a1a]' : 'border-gray-200'
+                  } ${
                     activeFileId === id 
-                      ? "bg-[#0a0a0a] text-white" 
-                      : "bg-[#0f0f0f] text-gray-500 hover:bg-[#1a1a1a]"
+                      ? `${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-white text-gray-900'}` 
+                      : `${isDark ? 'bg-[#0f0f0f] text-gray-500 hover:bg-[#1a1a1a]' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`
                   }`}
                 >
                   {isModified && <span className="w-2 h-2 rounded-full bg-yellow-400" />}
                   <span className="text-sm">{file?.name}</span>
                   <button 
                     onClick={(e) => handleCloseTab(e, id)} 
-                    className="opacity-0 group-hover:opacity-100 hover:bg-[#2a2a2a] p-0.5 rounded"
+                    className={`opacity-0 group-hover:opacity-100 p-0.5 rounded ${
+                      isDark ? 'hover:bg-[#2a2a2a]' : 'hover:bg-gray-300'
+                    }`}
                   >
                     <X size={12} />
                   </button>
@@ -679,7 +714,7 @@ export default function Editor() {
 
         {/* Editor */}
         <div className="flex-1 flex overflow-hidden relative">
-          <div className="flex-1 bg-[#0a0a0a] relative">
+          <div className={`flex-1 relative ${isDark ? 'bg-[#0a0a0a]' : 'bg-white'}`}>
             <CodeEditor
               ref={editorRef}
               file={activeFile}
@@ -733,7 +768,7 @@ export default function Editor() {
       
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: ${isDark ? '#2a2a2a' : '#d1d5db'}; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         ::selection { background: rgba(34, 211, 238, 0.2); }
       `}</style>

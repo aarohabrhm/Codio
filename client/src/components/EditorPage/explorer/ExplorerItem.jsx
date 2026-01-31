@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import FileIcon from "./FileIcon";
 import { ChevronDown, ChevronRight, FilePlus, FolderPlus, Trash2 } from "lucide-react";
+import { useTheme } from "../../../context/ThemeContext";
 
 export default function ExplorerItem({
   node,
@@ -22,6 +23,7 @@ export default function ExplorerItem({
   const [value, setValue] = useState(node.name || "");
   const inputRef = useRef(null);
   const committedRef = useRef(false);
+  const { isDark } = useTheme();
 
   useEffect(() => {
     if (isRenaming || isCreating) {
@@ -72,7 +74,7 @@ export default function ExplorerItem({
     return (
       <div
         style={{ paddingLeft: depth * 15 }}
-        className="flex items-center gap-2 px-2 py-1 bg-[#111316]"
+        className={`flex items-center gap-2 px-2 py-1 ${isDark ? 'bg-[#111316]' : 'bg-gray-100'}`}
       >
         {node.type === "folder" && <ChevronRight size={14} />}
         <FileIcon name={node.name || value} type={node.type} />
@@ -86,7 +88,11 @@ export default function ExplorerItem({
               commit();
             }
           }}
-          className="flex-1 bg-transparent border border-[#1f2937] rounded px-1 py-0.5 text-xs text-gray-100 outline-none"
+          className={`flex-1 bg-transparent border rounded px-1 py-0.5 text-xs outline-none ${
+            isDark 
+              ? 'border-[#1f2937] text-gray-100' 
+              : 'border-gray-300 text-gray-900'
+          }`}
         />
       </div>
     );
@@ -100,14 +106,18 @@ export default function ExplorerItem({
       }
       onDoubleClick={() => onStartRename?.(node.id)}
       className={`group flex items-center justify-between px-2 py-1 cursor-pointer ${
-        active ? "bg-[#1a1a1a]" : "hover:bg-[#151515]"
+        active 
+          ? (isDark ? 'bg-[#1a1a1a]' : 'bg-blue-100') 
+          : (isDark ? 'hover:bg-[#151515]' : 'hover:bg-gray-100')
       }`}
     >
       <div className="flex items-center gap-2">
         {node.type === "folder" &&
-          (node.isOpen ? <ChevronDown size={14} className="text-gray-500" /> : <ChevronRight size={14} className="text-gray-500" />)}
+          (node.isOpen 
+            ? <ChevronDown size={14} className={isDark ? 'text-gray-500' : 'text-gray-400'} /> 
+            : <ChevronRight size={14} className={isDark ? 'text-gray-500' : 'text-gray-400'} />)}
         <FileIcon name={node.name} type={node.type} isOpen={node.isOpen} />
-        <span className="text-xs truncate max-w-[140px] text-gray-300">{node.name}</span>
+        <span className={`text-xs truncate max-w-[140px] ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{node.name}</span>
         {isModified && (
           <span className="w-1 h-1 rounded-full bg-yellow-400 ml-1"></span>
         )}
@@ -120,7 +130,7 @@ export default function ExplorerItem({
           <>
             <button
               title="New file"
-              className="p-1 rounded hover:bg-[#2a2a2a] text-gray-400"
+              className={`p-1 rounded ${isDark ? 'hover:bg-[#2a2a2a] text-gray-400' : 'hover:bg-gray-200 text-gray-500'}`}
               onClick={() => {
                 if (!node.isOpen) {
                   onToggle?.(node.id);
@@ -132,7 +142,7 @@ export default function ExplorerItem({
             </button>
             <button
               title="New folder"
-              className="p-1 rounded hover:bg-[#2a2a2a] text-gray-400"
+              className={`p-1 rounded ${isDark ? 'hover:bg-[#2a2a2a] text-gray-400' : 'hover:bg-gray-200 text-gray-500'}`}
               onClick={() => {
                 if (!node.isOpen) {
                   onToggle?.(node.id);
@@ -146,7 +156,7 @@ export default function ExplorerItem({
         )}
         <button
           title="Delete"
-          className="p-1 rounded hover:bg-[#2a2a2a] text-gray-400 hover:text-red-400"
+          className={`p-1 rounded hover:text-red-400 ${isDark ? 'hover:bg-[#2a2a2a] text-gray-400' : 'hover:bg-gray-200 text-gray-500'}`}
           onClick={() => onDelete?.(node.id)}
         >
           <Trash2 size={12} />

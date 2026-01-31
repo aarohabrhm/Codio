@@ -17,14 +17,15 @@ import {
   Monitor,
   Check,
 } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
+  const { theme, setTheme, isDark } = useTheme();
   const [activeSection, setActiveSection] = useState("general");
 
   // Settings state
   const [settings, setSettings] = useState({
-    theme: "dark",
     fontSize: 14,
     tabSize: 2,
     wordWrap: true,
@@ -72,17 +73,21 @@ export default function SettingsPage() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-sm font-medium text-white mb-4">Editor Settings</h3>
+              <h3 className={`text-sm font-medium mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Editor Settings</h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
                   <div>
-                    <div className="text-sm text-white">Font Size</div>
-                    <div className="text-xs text-gray-500">Set the editor font size</div>
+                    <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Font Size</div>
+                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Set the editor font size</div>
                   </div>
                   <select
                     value={settings.fontSize}
                     onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
-                    className="bg-[#1a1a1a] text-white text-sm px-3 py-1.5 rounded-lg border border-[#2a2a2a] focus:outline-none"
+                    className={`text-sm px-3 py-1.5 rounded-lg border focus:outline-none ${
+                      isDark 
+                        ? 'bg-[#1a1a1a] text-white border-[#2a2a2a]' 
+                        : 'bg-gray-100 text-gray-900 border-gray-200'
+                    }`}
                   >
                     {[12, 13, 14, 15, 16, 18, 20].map((size) => (
                       <option key={size} value={size}>{size}px</option>
@@ -90,15 +95,19 @@ export default function SettingsPage() {
                   </select>
                 </div>
 
-                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
                   <div>
-                    <div className="text-sm text-white">Tab Size</div>
-                    <div className="text-xs text-gray-500">Number of spaces for indentation</div>
+                    <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Tab Size</div>
+                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Number of spaces for indentation</div>
                   </div>
                   <select
                     value={settings.tabSize}
                     onChange={(e) => setSettings({ ...settings, tabSize: Number(e.target.value) })}
-                    className="bg-[#1a1a1a] text-white text-sm px-3 py-1.5 rounded-lg border border-[#2a2a2a] focus:outline-none"
+                    className={`text-sm px-3 py-1.5 rounded-lg border focus:outline-none ${
+                      isDark 
+                        ? 'bg-[#1a1a1a] text-white border-[#2a2a2a]' 
+                        : 'bg-gray-100 text-gray-900 border-gray-200'
+                    }`}
                   >
                     {[2, 4, 8].map((size) => (
                       <option key={size} value={size}>{size} spaces</option>
@@ -106,10 +115,10 @@ export default function SettingsPage() {
                   </select>
                 </div>
 
-                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
                   <div>
-                    <div className="text-sm text-white">Word Wrap</div>
-                    <div className="text-xs text-gray-500">Wrap long lines of code</div>
+                    <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Word Wrap</div>
+                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Wrap long lines of code</div>
                   </div>
                   <Toggle
                     enabled={settings.wordWrap}
@@ -117,10 +126,10 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
                   <div>
-                    <div className="text-sm text-white">Minimap</div>
-                    <div className="text-xs text-gray-500">Show code minimap on the side</div>
+                    <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Minimap</div>
+                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Show code minimap on the side</div>
                   </div>
                   <Toggle
                     enabled={settings.minimap}
@@ -128,10 +137,10 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
                   <div>
-                    <div className="text-sm text-white">Line Numbers</div>
-                    <div className="text-xs text-gray-500">Show line numbers in the editor</div>
+                    <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Line Numbers</div>
+                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Show line numbers in the editor</div>
                   </div>
                   <Toggle
                     enabled={settings.lineNumbers}
@@ -142,12 +151,12 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-white mb-4">Auto Save & Format</h3>
+              <h3 className={`text-sm font-medium mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Auto Save & Format</h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
                   <div>
-                    <div className="text-sm text-white">Auto Save</div>
-                    <div className="text-xs text-gray-500">Automatically save files</div>
+                    <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Auto Save</div>
+                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Automatically save files</div>
                   </div>
                   <Toggle
                     enabled={settings.autoSave}
@@ -155,10 +164,10 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
                   <div>
-                    <div className="text-sm text-white">Format On Save</div>
-                    <div className="text-xs text-gray-500">Format code when saving</div>
+                    <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Format On Save</div>
+                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Format code when saving</div>
                   </div>
                   <Toggle
                     enabled={settings.formatOnSave}
@@ -174,21 +183,28 @@ export default function SettingsPage() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-sm font-medium text-white mb-4">Theme</h3>
+              <h3 className={`text-sm font-medium mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Theme</h3>
+              <p className={`text-xs mb-4 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                Choose how Codio looks to you. Select a single theme, or sync with your system.
+              </p>
               <div className="grid grid-cols-3 gap-3">
-                {themes.map((theme) => (
+                {themes.map((t) => (
                   <button
-                    key={theme.id}
-                    onClick={() => setSettings({ ...settings, theme: theme.id })}
+                    key={t.id}
+                    onClick={() => setTheme(t.id)}
                     className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition ${
-                      settings.theme === theme.id
-                        ? "bg-[#1a1a1a] border-cyan-500"
-                        : "bg-[#0f0f0f] border-[#1a1a1a] hover:border-[#2a2a2a]"
+                      theme === t.id
+                        ? isDark 
+                          ? "bg-[#1a1a1a] border-cyan-500" 
+                          : "bg-blue-50 border-blue-500"
+                        : isDark 
+                          ? "bg-[#0f0f0f] border-[#1a1a1a] hover:border-[#2a2a2a]"
+                          : "bg-white border-gray-200 hover:border-gray-300"
                     }`}
                   >
-                    <theme.icon size={24} className={settings.theme === theme.id ? "text-cyan-400" : "text-gray-400"} />
-                    <span className="text-sm text-white">{theme.label}</span>
-                    {settings.theme === theme.id && (
+                    <t.icon size={24} className={theme === t.id ? "text-cyan-400" : isDark ? "text-gray-400" : "text-gray-500"} />
+                    <span className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{t.label}</span>
+                    {theme === t.id && (
                       <Check size={14} className="text-cyan-400" />
                     )}
                   </button>
@@ -197,12 +213,12 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-white mb-4">Editor Appearance</h3>
+              <h3 className={`text-sm font-medium mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Editor Appearance</h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
                   <div>
-                    <div className="text-sm text-white">Bracket Pair Colorization</div>
-                    <div className="text-xs text-gray-500">Colorize matching brackets</div>
+                    <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Bracket Pair Colorization</div>
+                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Colorize matching brackets</div>
                   </div>
                   <Toggle
                     enabled={settings.bracketPairs}
@@ -218,12 +234,12 @@ export default function SettingsPage() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-sm font-medium text-white mb-4">AI Assistant</h3>
+              <h3 className={`text-sm font-medium mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>AI Assistant</h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
                   <div>
-                    <div className="text-sm text-white">AI Suggestions</div>
-                    <div className="text-xs text-gray-500">Show AI-powered code suggestions</div>
+                    <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>AI Suggestions</div>
+                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Show AI-powered code suggestions</div>
                   </div>
                   <Toggle
                     enabled={settings.aiSuggestions}
@@ -231,10 +247,10 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
                   <div>
-                    <div className="text-sm text-white">Code Completion</div>
-                    <div className="text-xs text-gray-500">Enable AI code completion</div>
+                    <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Code Completion</div>
+                    <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Enable AI code completion</div>
                   </div>
                   <Toggle
                     enabled={settings.codeCompletion}
@@ -249,23 +265,23 @@ export default function SettingsPage() {
       default:
         return (
           <div className="text-center py-12">
-            <div className="text-gray-500">Settings for {activeSection} coming soon...</div>
+            <div className={isDark ? 'text-gray-500' : 'text-gray-600'}>Settings for {activeSection} coming soon...</div>
           </div>
         );
     }
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#0a0a0a] text-gray-200">
+    <div className={`flex h-screen w-full ${isDark ? 'bg-[#0a0a0a] text-gray-200' : 'bg-white text-gray-900'}`}>
       
       {/* Settings Sidebar */}
-      <div className="w-64 bg-[#0f0f0f] border-r border-[#1a1a1a] flex flex-col">
+      <div className={`w-64 ${isDark ? 'bg-[#0f0f0f] border-[#1a1a1a]' : 'bg-gray-50 border-gray-200'} border-r flex flex-col`}>
         {/* Search */}
-        <div className="px-4 py-4 border-b border-[#1a1a1a]">
-          <div className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] rounded-lg text-gray-400 text-sm">
+        <div className={`px-4 py-4 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
+          <div className={`flex items-center gap-2 px-3 py-2 ${isDark ? 'bg-[#1a1a1a] text-gray-400' : 'bg-gray-100 text-gray-500'} rounded-lg text-sm`}>
             <Search size={14} />
             <span>Search settings</span>
-            <span className="ml-auto text-xs text-gray-600">⌘K</span>
+            <span className={`ml-auto text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>⌘K</span>
           </div>
         </div>
 
@@ -277,8 +293,12 @@ export default function SettingsPage() {
               onClick={() => setActiveSection(item.id)}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
                 activeSection === item.id
-                  ? "bg-[#1a1a1a] text-white"
-                  : "text-gray-400 hover:bg-[#1a1a1a] hover:text-white"
+                  ? isDark 
+                    ? "bg-[#1a1a1a] text-white" 
+                    : "bg-gray-200 text-gray-900"
+                  : isDark 
+                    ? "text-gray-400 hover:bg-[#1a1a1a] hover:text-white"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
               }`}
             >
               <item.icon size={16} />
@@ -291,18 +311,18 @@ export default function SettingsPage() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
         {/* Tab Bar */}
-        <div className="h-12 bg-[#0a0a0a] border-b border-[#1a1a1a] flex items-center px-4">
+        <div className={`h-12 ${isDark ? 'bg-[#0a0a0a] border-[#1a1a1a]' : 'bg-white border-gray-200'} border-b flex items-center px-4`}>
           <div className="flex items-center gap-1">
             <button
-              className="flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm bg-[#1a1a1a] text-white"
+              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm ${isDark ? 'bg-[#1a1a1a] text-white' : 'bg-gray-100 text-gray-900'}`}
             >
               <Settings size={14} />
               Settings
               <button
-                onClick={() => navigate("/editor")}
-                className="ml-2 p-0.5 rounded hover:bg-[#2a2a2a]"
+                onClick={() => navigate(-1)}
+                className={`ml-2 p-0.5 rounded ${isDark ? 'hover:bg-[#2a2a2a]' : 'hover:bg-gray-200'}`}
               >
-                <X size={12} className="text-gray-500 hover:text-white" />
+                <X size={12} className={`${isDark ? 'text-gray-500 hover:text-white' : 'text-gray-400 hover:text-gray-900'}`} />
               </button>
             </button>
           </div>
@@ -310,10 +330,10 @@ export default function SettingsPage() {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-8">
-          <h1 className="text-2xl font-semibold text-white mb-2">
+          <h1 className={`text-2xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             {menuItems.find((m) => m.id === activeSection)?.label || "Settings"}
           </h1>
-          <p className="text-sm text-gray-500 mb-8">
+          <p className={`text-sm mb-8 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
             Customize your Codio experience
           </p>
 

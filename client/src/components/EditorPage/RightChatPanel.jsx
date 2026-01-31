@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { X, ChevronRight, MessageCircle, Send, Plus, Sparkles } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { Smile } from "lucide-react";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function RightChatPanel({
   isOpen,
@@ -21,6 +22,7 @@ export default function RightChatPanel({
   const [showEmoji, setShowEmoji] = useState(false);
   const messagesEndRef = useRef(null);
   const [selectedModel, setSelectedModel] = useState("GPT-5");
+  const { isDark } = useTheme();
   
   const formatTime = (date) =>
     new Date(date).toLocaleTimeString([], {
@@ -43,20 +45,26 @@ export default function RightChatPanel({
 
   // Expanded state - full chat panel
   return (
-    <div className="w-96 bg-[#0a0a0a] border-l border-[#1a1a1a] flex flex-col h-full">
+    <div className={`w-96 border-l flex flex-col h-full ${
+      isDark 
+        ? 'bg-[#0a0a0a] border-[#1a1a1a]' 
+        : 'bg-white border-gray-200'
+    }`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a]">
+      <div className={`flex items-center justify-between px-4 py-3 border-b ${
+        isDark ? 'border-[#1a1a1a]' : 'border-gray-200'
+      }`}>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-white">
+          <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
             {chatMode === "ai" ? "AI Assistant" : "Team Chat"}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <button className="p-1.5 hover:bg-[#1a1a1a] rounded text-gray-400">
+          <button className={`p-1.5 rounded ${isDark ? 'hover:bg-[#1a1a1a] text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
             <Plus size={16} />
           </button>
           <button
-            className="p-1.5 hover:bg-[#1a1a1a] rounded text-gray-400"
+            className={`p-1.5 rounded ${isDark ? 'hover:bg-[#1a1a1a] text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
             onClick={onToggle}
           >
             <X size={16} />
@@ -65,14 +73,14 @@ export default function RightChatPanel({
       </div>
 
       {/* Chat Mode Toggle */}
-      <div className="px-4 py-3 border-b border-[#1a1a1a]">
-        <div className="flex gap-1 bg-[#0f0f0f] rounded-lg p-1">
+      <div className={`px-4 py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
+        <div className={`flex gap-1 rounded-lg p-1 ${isDark ? 'bg-[#0f0f0f]' : 'bg-gray-100'}`}>
           <button
             onClick={() => setChatMode("ai")}
             className={`px-3 py-1 text-xs rounded-md transition ${
               chatMode === "ai"
                 ? "bg-cyan-500/20 text-cyan-400"
-                : "text-gray-500 hover:text-white"
+                : `${isDark ? 'text-gray-500 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`
             }`}
           >
             AI
@@ -83,7 +91,7 @@ export default function RightChatPanel({
   className={`relative px-3 py-1 text-xs rounded-md transition ${
     chatMode === "team"
       ? "bg-emerald-500/20 text-emerald-400"
-      : "text-gray-500 hover:text-white"
+      : `${isDark ? 'text-gray-500 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`
   }`}
 >
   Team
@@ -104,10 +112,10 @@ export default function RightChatPanel({
       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center mb-4">
         <Sparkles size={24} className="text-white" />
       </div>
-      <div className="text-lg font-medium text-white mb-2">
+      <div className={`text-lg font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
         How can I help you?
       </div>
-      <div className="text-sm text-gray-500">
+      <div className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
         Ask me anything about your code
       </div>
     </div>
@@ -136,7 +144,7 @@ export default function RightChatPanel({
                 className="w-7 h-7 rounded-full object-cover"
               />
               {isUnseen && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#0a0a0a]"></span>
+                <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 ${isDark ? 'border-[#0a0a0a]' : 'border-white'}`}></span>
               )}
             </div>
           )}
@@ -148,7 +156,7 @@ export default function RightChatPanel({
                 ? "bg-emerald-600 text-white rounded-2xl rounded-br-sm"
                 : isUnseen
                 ? "bg-blue-600/30 text-gray-100 rounded-2xl rounded-bl-sm border border-blue-500/50"
-                : "bg-[#1a1a1a] text-gray-200 rounded-2xl rounded-bl-sm"
+                : `${isDark ? 'bg-[#1a1a1a] text-gray-200' : 'bg-gray-100 text-gray-800'} rounded-2xl rounded-bl-sm`
             }`}
           >
             {/* Username (others only) */}
@@ -190,19 +198,23 @@ export default function RightChatPanel({
 
       {/* Typing Indicator */}
       {typingUsers.length > 0 && chatMode === "team" && (
-        <div className="px-4 pb-2 text-xs text-gray-400 italic">
+        <div className={`px-4 pb-2 text-xs italic ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
           {typingUsers[0]} is typing…
         </div>
       )}
 
       {/* Input Area */}
-      <div className="border-t border-[#1a1a1a] p-4">
-        <div className="bg-[#0f0f0f] rounded-xl border border-[#1a1a1a] overflow-hidden">
+      <div className={`border-t p-4 ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
+        <div className={`rounded-xl border overflow-hidden ${
+          isDark 
+            ? 'bg-[#0f0f0f] border-[#1a1a1a]' 
+            : 'bg-gray-50 border-gray-200'
+        }`}>
           <div className="px-4 py-3 relative">
             {showEmoji && (
               <div className="absolute bottom-20 right-4 z-50">
                 <EmojiPicker
-                  theme="dark"
+                  theme={isDark ? "dark" : "light"}
                   onEmojiClick={(emojiData) => {
                     setChatInput(prev => prev + emojiData.emoji);
                     setShowEmoji(false);
@@ -218,7 +230,11 @@ export default function RightChatPanel({
                 onTyping();
               }}
               placeholder="Plan, search, build anything..."
-              className="w-full bg-transparent text-sm text-gray-300 placeholder:text-gray-600 focus:outline-none resize-none"
+              className={`w-full bg-transparent text-sm focus:outline-none resize-none ${
+                isDark 
+                  ? 'text-gray-300 placeholder:text-gray-600' 
+                  : 'text-gray-700 placeholder:text-gray-400'
+              }`}
               rows={2}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -229,8 +245,10 @@ export default function RightChatPanel({
             />
           </div>
           
-          <div className="px-4 py-2 border-t border-[#1a1a1a] flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className={`px-4 py-2 border-t flex items-center justify-between ${
+            isDark ? 'border-[#1a1a1a]' : 'border-gray-200'
+          }`}>
+            <div className={`flex items-center gap-2 text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
               {chatMode === "ai" && (
                 <>
                   <span className="flex items-center gap-1">
@@ -241,7 +259,9 @@ export default function RightChatPanel({
                   <select
                     value={selectedModel}
                     onChange={(e) => setSelectedModel(e.target.value)}
-                    className="bg-transparent text-gray-400 text-xs focus:outline-none cursor-pointer"
+                    className={`bg-transparent text-xs focus:outline-none cursor-pointer ${
+                      isDark ? 'text-gray-400' : 'text-gray-500'
+                    }`}
                   >
                     <option value="GPT-5">GPT-5</option>
                     <option value="GPT-4">GPT-4</option>
@@ -254,7 +274,7 @@ export default function RightChatPanel({
             
             <div className="flex items-center gap-2">
               <button
-                className="p-1.5 text-gray-400 hover:text-white"
+                className={`p-1.5 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
                 onClick={() => setShowEmoji(prev => !prev)}
                 title="Emoji"
               >
@@ -262,7 +282,7 @@ export default function RightChatPanel({
               </button>
 
               <button
-                className="p-1.5 text-cyan-400 hover:text-cyan-300 rounded hover:bg-[#1a1a1a]"
+                className={`p-1.5 text-cyan-400 hover:text-cyan-300 rounded ${isDark ? 'hover:bg-[#1a1a1a]' : 'hover:bg-gray-200'}`}
                 onClick={onChatSend}
                 title="Send"
               >

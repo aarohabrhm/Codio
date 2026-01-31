@@ -5,6 +5,7 @@ import React, {
   forwardRef,
 } from "react";
 import Editor from "@monaco-editor/react";
+import { useTheme } from "../../../context/ThemeContext";
 
 /* ---------- Language Detection ---------- */
 const getLanguageFromName = (name = "") => {
@@ -30,6 +31,7 @@ const CodeEditor = forwardRef(
     const monacoRef = useRef(null);
     const currentFileId = useRef(null);
     const isRemoteChange = useRef(false);
+    const { isDark } = useTheme();
 
     /* ---------- Expose methods ---------- */
     useImperativeHandle(ref, () => ({
@@ -40,6 +42,7 @@ const CodeEditor = forwardRef(
 
     /* ---------- Theme ---------- */
     const handleBeforeMount = (monaco) => {
+      // Dark theme
       monaco.editor.defineTheme("codio-dark", {
         base: "vs-dark",
         inherit: true,
@@ -60,6 +63,28 @@ const CodeEditor = forwardRef(
           "scrollbarSlider.background": "#2a2a2a55",
         },
       });
+      
+      // Light theme
+      monaco.editor.defineTheme("codio-light", {
+        base: "vs",
+        inherit: true,
+        rules: [
+          { token: "comment", foreground: "008000" },
+          { token: "keyword", foreground: "0000ff" },
+          { token: "string", foreground: "a31515" },
+          { token: "number", foreground: "098658" },
+          { token: "function", foreground: "795e26" },
+        ],
+        colors: {
+          "editor.background": "#ffffff",
+          "editor.foreground": "#1f1f1f",
+          "editorCursor.foreground": "#0891b2",
+          "editor.selectionBackground": "#add6ff",
+          "editorLineNumber.foreground": "#6e7681",
+          "editorLineNumber.activeForeground": "#1f1f1f",
+          "scrollbarSlider.background": "#d1d5db55",
+        },
+      });
     };
 
     /* ---------- Mount ---------- */
@@ -67,7 +92,7 @@ const CodeEditor = forwardRef(
       editorRef.current = editor;
       monacoRef.current = monaco;
 
-      monaco.editor.setTheme("codio-dark");
+      monaco.editor.setTheme(isDark ? "codio-dark" : "codio-light");
 
       /* Cursor tracking */
       editor.onDidChangeCursorPosition((e) => {
@@ -94,6 +119,13 @@ const CodeEditor = forwardRef(
         () => onSave?.()
       );
     };
+
+    /* ---------- Theme Change Effect ---------- */
+    useEffect(() => {
+      if (monacoRef.current) {
+        monacoRef.current.editor.setTheme(isDark ? "codio-dark" : "codio-light");
+      }
+    }, [isDark]);
 
     /* ---------- Remote Updates ---------- */
     useEffect(() => {
@@ -142,7 +174,7 @@ const CodeEditor = forwardRef(
 
     if (!file) {
       return (
-        <div className="h-full w-full flex items-center justify-center text-gray-500 text-sm">
+        <div className={`h-full w-full flex items-center justify-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
           Select a file to start editing
         </div>
       );
@@ -156,7 +188,7 @@ const CodeEditor = forwardRef(
         language={getLanguageFromName(file.name)}
         beforeMount={handleBeforeMount}
         onMount={handleMount}
-        theme="codio-dark"
+        theme={isDark ? "codio-dark" : "codio-light"}
         options={{
           fontSize: 13,
           minimap: { enabled: true },
