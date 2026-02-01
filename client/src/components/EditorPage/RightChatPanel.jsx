@@ -21,8 +21,28 @@ export default function RightChatPanel({
 }) {
   const [showEmoji, setShowEmoji] = useState(false);
   const messagesEndRef = useRef(null);
+  const emojiPickerRef = useRef(null);
+  const emojiButtonRef = useRef(null);
   const [selectedModel, setSelectedModel] = useState("GPT-5");
   const { isDark } = useTheme();
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        showEmoji &&
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target) &&
+        emojiButtonRef.current &&
+        !emojiButtonRef.current.contains(event.target)
+      ) {
+        setShowEmoji(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showEmoji]);
   
   const formatTime = (date) =>
     new Date(date).toLocaleTimeString([], {
@@ -45,7 +65,7 @@ export default function RightChatPanel({
 
   // Expanded state - full chat panel
   return (
-    <div className={`w-96 border-l flex flex-col h-full ${
+    <div className={`w-96 border-l flex flex-col h-full relative ${
       isDark 
         ? 'bg-[#0a0a0a] border-[#1a1a1a]' 
         : 'bg-white border-gray-200'
@@ -203,6 +223,25 @@ export default function RightChatPanel({
         </div>
       )}
 
+      {/* Emoji Picker - Positioned outside the input container */}
+      {showEmoji && (
+        <div 
+          ref={emojiPickerRef}
+          className="absolute bottom-24 left-4 z-50 shadow-xl rounded-lg"
+        >
+          <EmojiPicker
+            theme={isDark ? "dark" : "light"}
+            width={300}
+            height={350}
+            searchPlaceHolder="Search emoji..."
+            previewConfig={{ showPreview: false }}
+            onEmojiClick={(emojiData) => {
+              setChatInput(prev => prev + emojiData.emoji);
+            }}
+          />
+        </div>
+      )}
+
       {/* Input Area */}
       <div className={`border-t p-4 ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
         <div className={`rounded-xl border overflow-hidden ${
@@ -210,19 +249,7 @@ export default function RightChatPanel({
             ? 'bg-[#0f0f0f] border-[#1a1a1a]' 
             : 'bg-gray-50 border-gray-200'
         }`}>
-          <div className="px-4 py-3 relative">
-            {showEmoji && (
-              <div className="absolute bottom-20 right-4 z-50">
-                <EmojiPicker
-                  theme={isDark ? "dark" : "light"}
-                  onEmojiClick={(emojiData) => {
-                    setChatInput(prev => prev + emojiData.emoji);
-                    setShowEmoji(false);
-                  }}
-                />
-              </div>
-            )}
-
+          <div className="px-4 py-3">
             <textarea
               value={chatInput}
               onChange={(e) => {
@@ -274,7 +301,14 @@ export default function RightChatPanel({
             
             <div className="flex items-center gap-2">
               <button
-                className={`p-1.5 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                ref={emojiButtonRef}
+                className={`p-1.5 rounded transition-colors ${
+                  showEmoji 
+                    ? 'text-cyan-400 bg-cyan-400/10' 
+                    : isDark 
+                      ? 'text-gray-400 hover:text-white hover:bg-[#1a1a1a]' 
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+                }`}
                 onClick={() => setShowEmoji(prev => !prev)}
                 title="Emoji"
               >
