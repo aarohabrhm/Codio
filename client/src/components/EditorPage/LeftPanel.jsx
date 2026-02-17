@@ -16,9 +16,15 @@ export default function LeftPanel({
   modifiedFiles = [],
   searchQuery = "",
   setSearchQuery,
+  checkpoints = [],
+  selectedCheckpointId,
+  onSelectCheckpoint,
+  onCommitCheckpoint,
+  onRevertCheckpoint,
 }) {
   const [creating, setCreating] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
+  const [commitMessage, setCommitMessage] = useState("");
 
   const startCreate = (parentId, type) => {
     setCreating({ parentId, type });
@@ -174,15 +180,44 @@ export default function LeftPanel({
                 </div>
               )}
             </div>
+            {/* Commit message & actions */}
+            <div className="mt-6 space-y-2">
+              <input
+                type="text"
+                value={commitMessage}
+                onChange={(e) => setCommitMessage(e.target.value)}
+                placeholder="Commit message"
+                className={`w-full border rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-cyan-500 ${
+                  isDark
+                    ? 'bg-[#1a1a1a] border-[#2a2a2a] text-gray-100 placeholder:text-gray-600'
+                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400'
+                }`}
+              />
 
-            <div className="mt-4 space-y-2">
               <button className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm ${
                 isDark 
                   ? 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300' 
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-              }`}>
+              }`}
+              onClick={() => {
+                const trimmed = commitMessage.trim();
+                if (!trimmed) return;
+                onCommitCheckpoint?.(trimmed);
+                setCommitMessage("");
+              }}
+              >
                 <Check size={14} />
-                Commit
+                Commit Checkpoint
+              </button>
+              <button className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                isDark 
+                  ? 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
+              onClick={() => onRevertCheckpoint?.()}
+              >
+                <Check size={14} />
+                Revert Checkpoint
               </button>
               <button className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm ${
                 isDark 
@@ -192,6 +227,79 @@ export default function LeftPanel({
                 <Plus size={14} />
                 Stage All
               </button>
+            </div>
+
+            {/* Checkpoints list (most recent first) */}
+            <div className="mt-4">
+              <div className={`text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                Checkpoints
+              </div>
+              {checkpoints.length > 0 ? (
+                <div className="relative ml-[7px]">
+                  {/* Continuous vertical line behind all circles */}
+                  {checkpoints.length > 1 && (
+                    <span
+                      className={`absolute left-[4px] top-[10px] w-px ${isDark ? 'bg-[#2a2a2a]' : 'bg-gray-300'}`}
+                      style={{ bottom: 10 }}
+                    />
+                  )}
+
+                  {checkpoints.map((cp, index) => {
+                    const isSelected = selectedCheckpointId === cp.id;
+                    const isLatest = index === 0;
+                    const created = new Date(cp.createdAt);
+                    const timeLabel = created.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    return (
+                      <button
+                        key={cp.id}
+                        type="button"
+                        onClick={() => onSelectCheckpoint?.(cp.id)}
+                        className="relative w-full flex items-start gap-3 text-left pl-4 pr-2 py-2 rounded-lg"
+                      >
+                        {/* Circle on the line */}
+                        <span
+                          className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-full shrink-0 ${
+                            isLatest
+                              ? `w-[9px] h-[9px] ${
+                                  isDark
+                                    ? 'bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.25)]'
+                                    : 'bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.25)]'
+                                }`
+                              : `w-[9px] h-[9px] border-2 ${
+                                  isSelected
+                                    ? isDark
+                                      ? 'bg-cyan-400 border-cyan-400'
+                                      : 'bg-cyan-500 border-cyan-500'
+                                    : isDark
+                                      ? 'bg-[#0f0f0f] border-[#444]'
+                                      : 'bg-white border-gray-400'
+                                }`
+                          }`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`truncate text-xs ${
+                              isSelected ? 'font-bold' : 'font-medium'
+                            } ${
+                              isDark ? 'text-gray-200' : 'text-gray-800'
+                            }`}>
+                              {cp.message}
+                            </span>
+                          </div>
+                          <div className={`text-[10px] mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                            {timeLabel}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={`text-xs text-center py-3 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                  No checkpoints yet
+                </div>
+              )}
             </div>
           </div>
         )}

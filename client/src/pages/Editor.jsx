@@ -61,6 +61,10 @@ export default function Editor() {
   const [isSaving, setIsSaving] = useState(false);
   const { isDark } = useTheme();
 
+  // Local checkpoints (in-memory timeline of file snapshots)
+  const [checkpoints, setCheckpoints] = useState([]);
+  const [selectedCheckpointId, setSelectedCheckpointId] = useState(null);
+
   // File management
   const {
     files,
@@ -422,18 +426,12 @@ export default function Editor() {
   const handleContentChange = useCallback((content) => {
     if (!activeFileId) return;
 
-    // Update local state for the ACTIVE file only
-    setFiles(prev => ({
-      ...prev,
-      [activeFileId]: {
-        ...prev[activeFileId],
-        content: content
-      }
-    }));
-    
+    // Update via file manager so modified state stays in sync
+    updateContent(content);
+
     // Send to other users
     sendCodeChange(activeFileId, null, content);
-  }, [activeFileId, setFiles, sendCodeChange]);
+  }, [activeFileId, updateContent, sendCodeChange]);
 
   // Notify when file is opened
   useEffect(() => {
@@ -559,6 +557,46 @@ export default function Editor() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleSave]);
 
+  // ===== Checkpoints (local timeline) =====
+
+  const handleCommitCheckpoint = useCallback((message) => {
+    if (!files) return;
+
+    const trimmed = (message || "").trim();
+    if (!trimmed) return;
+
+    // Snapshot current files state
+    const snapshot = JSON.parse(JSON.stringify(files));
+
+    const newCheckpoint = {
+      id: Date.now().toString(),
+      message: trimmed,
+      createdAt: new Date().toISOString(),
+      files: snapshot,
+    };
+
+    setCheckpoints((prev) => [newCheckpoint, ...prev]);
+    setSelectedCheckpointId(newCheckpoint.id);
+  }, [files]);
+
+  const handleRevertCheckpoint = useCallback((checkpointId) => {
+    const targetId = checkpointId || selectedCheckpointId;
+    if (!targetId) {
+      window.alert("Select a checkpoint to revert to.");
+      return;
+    }
+
+    const checkpoint = checkpoints.find((cp) => cp.id === targetId);
+    if (!checkpoint) return;
+
+    const confirmed = window.confirm(
+      "Revert project files to this checkpoint? Unsaved changes will be lost."
+    );
+    if (!confirmed) return;
+
+    setFiles(checkpoint.files);
+  }, [checkpoints, selectedCheckpointId, setFiles]);
+
   if (isLoading) {
     return (
       <div className={`h-screen w-full flex flex-col items-center justify-center gap-4 ${
@@ -604,6 +642,11 @@ export default function Editor() {
           modifiedFiles={modifiedFiles}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
+          checkpoints={checkpoints}
+          selectedCheckpointId={selectedCheckpointId}
+          onSelectCheckpoint={setSelectedCheckpointId}
+          onCommitCheckpoint={handleCommitCheckpoint}
+          onRevertCheckpoint={handleRevertCheckpoint}
         />
       )}
 
