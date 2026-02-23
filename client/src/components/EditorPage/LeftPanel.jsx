@@ -21,10 +21,11 @@ export default function LeftPanel({
   setSearchQuery,
   checkpoints = [],
   selectedCheckpointId,
+  currentHeadId,          // NEW PROP
   onSelectCheckpoint,
-  onCommitCheckpoint,   // fn(message, description) → void
-  onRevertCheckpoint,   // fn(cpId) → void
-  onDeleteCheckpoint,   // fn(cpId) → void
+  onCommitCheckpoint,
+  onRevertCheckpoint,
+  onDeleteCheckpoint,
 }) {
   const [creating, setCreating] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
@@ -222,10 +223,13 @@ export default function LeftPanel({
                   )}
 
                   {checkpoints.map((cp, index) => {
-                    const isSelected  = selectedCheckpointId === (cp._id ?? cp.id);
-                    const isLatest    = index === 0;
-                    const isExpanded  = expandedCpId === (cp._id ?? cp.id);
                     const cpId        = cp._id ?? cp.id;
+                    const isSelected  = selectedCheckpointId === cpId;
+                    
+                    // FIX: Check currentHeadId to dynamically move the "Green Dot" HEAD
+                    const isLatest    = currentHeadId ? cpId === currentHeadId : index === 0;
+                    
+                    const isExpanded  = expandedCpId === cpId;
                     const timeLabel   = new Date(cp.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
                     const dateLabel   = new Date(cp.createdAt).toLocaleDateString([], { month: "short", day: "numeric" });
 

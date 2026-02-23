@@ -64,6 +64,7 @@ export default function Editor() {
   // --- Checkpoint State ---
   const [checkpoints, setCheckpoints] = useState([]);
   const [selectedCheckpointId, setSelectedCheckpointId] = useState(null);
+  const [currentHeadId, setCurrentHeadId] = useState(null); // Tracks the "Green Dot"
 
   // File management
   const {
@@ -148,6 +149,10 @@ export default function Editor() {
         headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` }
       });
       setCheckpoints(res.data);
+      // Initialize HEAD to the latest checkpoint if not set yet
+      if (res.data.length > 0) {
+        setCurrentHeadId(prev => prev || res.data[0]._id);
+      }
     } catch (err) {
       console.error("Failed to load checkpoints", err);
     }
@@ -159,11 +164,13 @@ export default function Editor() {
 
   const handleCommitCheckpoint = async (message, description) => {
     try {
-      await axios.post(
+      const res = await axios.post(
         `http://localhost:8000/api/projects/${projectId}/checkpoints`,
         { message, description },
         { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
       );
+      
+      setCurrentHeadId(res.data._id); // Move HEAD to the newly created checkpoint
       fetchCheckpoints(); 
       setConsoleOutput(prev => [...prev, `✅ Checkpoint saved: ${message}`]);
     } catch (err) {
@@ -180,7 +187,22 @@ export default function Editor() {
         { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
       );
       
+      // 1. Update files in memory
       setFiles(res.data.files); 
+      
+      // 2. Move HEAD indicator to the reverted checkpoint
+      setCurrentHeadId(cpId);
+      
+      // 3. Force Monaco Editor to immediately update its text content
+      if (activeFileId && res.data.files[activeFileId]) {
+         window.dispatchEvent(new CustomEvent('remote-code-update', {
+           detail: { 
+             fileId: activeFileId, 
+             content: res.data.files[activeFileId].content 
+           }
+         }));
+      }
+
       setConsoleOutput(prev => [...prev, "⏪ Successfully reverted to checkpoint."]);
     } catch (err) {
       console.error(err);
@@ -656,6 +678,7 @@ export default function Editor() {
           setSearchQuery={setSearchQuery}
           checkpoints={checkpoints}
           selectedCheckpointId={selectedCheckpointId}
+          currentHeadId={currentHeadId}               // NEW: Passing down HEAD
           onSelectCheckpoint={setSelectedCheckpointId}
           onCommitCheckpoint={handleCommitCheckpoint}
           onRevertCheckpoint={handleRevertCheckpoint}
