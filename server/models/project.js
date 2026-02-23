@@ -1,14 +1,21 @@
-// models/project.js
 import mongoose from "mongoose";
 
+const checkpointSchema = new mongoose.Schema({
+  message: { type: String, required: true },       // commit title
+  description: { type: String, default: "" },       // commit description
+  files: { type: Object, required: true },          // snapshot of ALL files at this point
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+}, { timestamps: true });
+
 const projectSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    description: { type: String },
-    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    collaborators: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    image: { type: String, default: "" }, 
-    isPublic: { type: Boolean, default: false },
-    files: { type: Object, default: {} } 
+  title:         { type: String, required: true },
+  description:   { type: String },
+  owner:         { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  collaborators: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  image:         { type: String, default: "" },
+  isPublic:      { type: Boolean, default: false },
+  files:         { type: Object, default: {} },
+  checkpoints:   { type: [checkpointSchema], default: [] },
 }, { timestamps: true });
 
 export default mongoose.model("Project", projectSchema);

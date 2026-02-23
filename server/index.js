@@ -12,7 +12,7 @@ import http from 'http';
 import projectRoutes from "./routes/projectRoutes.js";
 import executeRouter from './routes/execute.js';
 import chatRoutes from "./routes/chatRoutes.js";
-
+import checkpointRoutes from "./routes/checkpointRoutes.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -39,6 +39,7 @@ app.use("/api/execute", executeRouter);
 app.use(express.urlencoded({ extended: true }))
 app.use("/api/projects", projectRoutes);
 app.use('/avatar', express.static(path.join(__dirname, 'avatar')));
+app.use("/api/projects/:id/checkpoints", checkpointRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/project-covers', express.static(path.join(__dirname, 'project-covers')));
 
