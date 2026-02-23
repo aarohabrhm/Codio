@@ -61,7 +61,7 @@ export default function Editor() {
   const [isSaving, setIsSaving] = useState(false);
   const { isDark } = useTheme();
 
-  // Local checkpoints (in-memory timeline of file snapshots)
+  // --- Checkpoint State ---
   const [checkpoints, setCheckpoints] = useState([]);
   const [selectedCheckpointId, setSelectedCheckpointId] = useState(null);
 
@@ -139,6 +139,69 @@ export default function Editor() {
     
     sendFileDeleted(fileId);
   }, [setFiles, sendFileDeleted]);
+
+  // --- Checkpoint Functions ---
+  const fetchCheckpoints = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const res = await axios.get(`http://localhost:8000/api/projects/${projectId}/checkpoints`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` }
+      });
+      setCheckpoints(res.data);
+    } catch (err) {
+      console.error("Failed to load checkpoints", err);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchCheckpoints();
+  }, [fetchCheckpoints]);
+
+  const handleCommitCheckpoint = async (message, description) => {
+    try {
+      await axios.post(
+        `http://localhost:8000/api/projects/${projectId}/checkpoints`,
+        { message, description },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
+      );
+      fetchCheckpoints(); 
+      setConsoleOutput(prev => [...prev, `✅ Checkpoint saved: ${message}`]);
+    } catch (err) {
+      console.error(err);
+      setConsoleOutput(prev => [...prev, "❌ Failed to save checkpoint."]);
+    }
+  };
+
+  const handleRevertCheckpoint = async (cpId) => {
+    try {
+      const res = await axios.post(
+        `http://localhost:8000/api/projects/${projectId}/checkpoints/${cpId}/revert`,
+        {},
+        { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
+      );
+      
+      setFiles(res.data.files); 
+      setConsoleOutput(prev => [...prev, "⏪ Successfully reverted to checkpoint."]);
+    } catch (err) {
+      console.error(err);
+      setConsoleOutput(prev => [...prev, "❌ Failed to revert checkpoint."]);
+    }
+  };
+
+  const handleDeleteCheckpoint = async (cpId) => {
+    try {
+      await axios.delete(
+        `http://localhost:8000/api/projects/${projectId}/checkpoints/${cpId}`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
+      );
+      fetchCheckpoints(); 
+      setConsoleOutput(prev => [...prev, "🗑️ Checkpoint deleted."]);
+    } catch (err) {
+      console.error(err);
+      setConsoleOutput(prev => [...prev, "❌ Failed to delete checkpoint."]);
+    }
+  };
+  // ----------------------------
 
   const createFile = useCallback((parentId, name) => {
     const fileData = {
@@ -422,25 +485,18 @@ export default function Editor() {
     }
   }, [activeFileId, sendCursor]);
 
-  // CRITICAL FIX: Handle content change - Only update the ACTIVE file
   const handleContentChange = useCallback((content) => {
     if (!activeFileId) return;
-
-    // Update via file manager so modified state stays in sync
     updateContent(content);
-
-    // Send to other users
     sendCodeChange(activeFileId, null, content);
   }, [activeFileId, updateContent, sendCodeChange]);
 
-  // Notify when file is opened
   useEffect(() => {
     if (activeFileId) {
       sendFileSelect(activeFileId);
     }
   }, [activeFileId, sendFileSelect]);
 
-  // UI Helper functions
   const handleCloseTab = (e, id) => { 
     e.stopPropagation(); 
     closeTab(id); 
@@ -545,7 +601,6 @@ export default function Editor() {
     }
   }, [activeFile]);
 
-  // Ctrl+S Listener
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
@@ -556,46 +611,6 @@ export default function Editor() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleSave]);
-
-  // ===== Checkpoints (local timeline) =====
-
-  const handleCommitCheckpoint = useCallback((message) => {
-    if (!files) return;
-
-    const trimmed = (message || "").trim();
-    if (!trimmed) return;
-
-    // Snapshot current files state
-    const snapshot = JSON.parse(JSON.stringify(files));
-
-    const newCheckpoint = {
-      id: Date.now().toString(),
-      message: trimmed,
-      createdAt: new Date().toISOString(),
-      files: snapshot,
-    };
-
-    setCheckpoints((prev) => [newCheckpoint, ...prev]);
-    setSelectedCheckpointId(newCheckpoint.id);
-  }, [files]);
-
-  const handleRevertCheckpoint = useCallback((checkpointId) => {
-    const targetId = checkpointId || selectedCheckpointId;
-    if (!targetId) {
-      window.alert("Select a checkpoint to revert to.");
-      return;
-    }
-
-    const checkpoint = checkpoints.find((cp) => cp.id === targetId);
-    if (!checkpoint) return;
-
-    const confirmed = window.confirm(
-      "Revert project files to this checkpoint? Unsaved changes will be lost."
-    );
-    if (!confirmed) return;
-
-    setFiles(checkpoint.files);
-  }, [checkpoints, selectedCheckpointId, setFiles]);
 
   if (isLoading) {
     return (
@@ -608,13 +623,10 @@ export default function Editor() {
     );
   }
 
-  // Handle tab change with toggle logic (VS Code-like behavior)
   const handleTabChange = (tab) => {
     if (tab === activeLeftTab) {
-      // Clicking the same tab toggles panel visibility
       setLeftPanelVisible((prev) => !prev);
     } else {
-      // Clicking a different tab switches to it and shows the panel
       setActiveLeftTab(tab);
       setLeftPanelVisible(true);
     }
@@ -647,11 +659,11 @@ export default function Editor() {
           onSelectCheckpoint={setSelectedCheckpointId}
           onCommitCheckpoint={handleCommitCheckpoint}
           onRevertCheckpoint={handleRevertCheckpoint}
+          onDeleteCheckpoint={handleDeleteCheckpoint} 
         />
       )}
 
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Top Toolbar */}
         <div className={`h-10 border-b flex items-center justify-between px-4 ${
           isDark 
             ? 'bg-[#0a0a0a] border-[#1a1a1a]' 
@@ -699,7 +711,7 @@ export default function Editor() {
               <Play size={12}/> Run
             </button>
           </div>
-           
+            
           <div className="flex items-center gap-2">
             {!chatOpen && (
               <button 
@@ -721,7 +733,6 @@ export default function Editor() {
           </div>
         </div>
 
-        {/* Tab Bar */}
         <div className={`border-b ${isDark ? 'bg-[#0f0f0f] border-[#1a1a1a]' : 'bg-gray-100 border-gray-200'}`}>
           <div className="flex items-center">
             {openFiles.map((id) => {
@@ -755,7 +766,6 @@ export default function Editor() {
           </div>
         </div>
 
-        {/* Editor */}
         <div className="flex-1 flex overflow-hidden relative">
           <div className={`flex-1 relative ${isDark ? 'bg-[#0a0a0a]' : 'bg-white'}`}>
             <CodeEditor

@@ -7,13 +7,11 @@ import {
   deleteCheckpoint,
 } from "../controllers/checkpointController.js";
 
-const router = express.Router({ mergeParams: true }); // mergeParams lets us read :id from parent
-
-router.use(authenticateToken); // all checkpoint routes require auth
-
-router.get("/",            getCheckpoints);       // GET  /api/projects/:id/checkpoints
-router.post("/",           createCheckpoint);     // POST /api/projects/:id/checkpoints
-router.post("/:cpId/revert", revertToCheckpoint); // POST /api/projects/:id/checkpoints/:cpId/revert
-router.delete("/:cpId",    deleteCheckpoint);     // DEL  /api/projects/:id/checkpoints/:cpId
+const router = express.Router({ mergeParams: true });
+router.use(authenticateToken);
+router.get("/",            getCheckpoints);
+router.post("/",           createCheckpoint);
+router.post("/:cpId/revert", revertToCheckpoint);
+router.delete("/:cpId",    deleteCheckpoint);
 
 export default router;
