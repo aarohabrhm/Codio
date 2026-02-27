@@ -98,6 +98,7 @@ export default function Editor() {
     sendFolderCreated,
     sendFileRenamed,
     sendFileDeleted,
+    sendProjectReverted,
     sendChatMessage,
     sendChatTyping,
     markMessagesAsSeen
@@ -187,21 +188,24 @@ export default function Editor() {
         { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
       );
       
-      // 1. Update files in memory
-      setFiles(res.data.files); 
+      const newFiles = res.data.files;
       
-      // 2. Move HEAD indicator to the reverted checkpoint
+      // Update local state
+      setFiles(newFiles); 
       setCurrentHeadId(cpId);
       
-      // 3. Force Monaco Editor to immediately update its text content
-      if (activeFileId && res.data.files[activeFileId]) {
+      // Update editor text instantly
+      if (activeFileId && newFiles[activeFileId]) {
          window.dispatchEvent(new CustomEvent('remote-code-update', {
            detail: { 
              fileId: activeFileId, 
-             content: res.data.files[activeFileId].content 
+             content: newFiles[activeFileId].content 
            }
          }));
       }
+
+      // Tell other connected users that we reverted!
+      sendProjectReverted(newFiles, cpId);
 
       setConsoleOutput(prev => [...prev, "⏪ Successfully reverted to checkpoint."]);
     } catch (err) {
@@ -299,6 +303,7 @@ export default function Editor() {
         }
       }));
     };
+    
 
     const handleFolderCreated = (event) => {
       const { parentId, folderData } = event.detail;
@@ -310,6 +315,18 @@ export default function Editor() {
           children: [...(prev[parentId]?.children || []), folderData.id]
         }
       }));
+    };
+    const handleProjectReverted = (event) => {
+      const { files: revertedFiles, cpId, username } = event.detail;
+      
+      // Update local file state to match the revert
+      setFiles(revertedFiles);
+      
+      // Move the Green Dot to match
+      setCurrentHeadId(cpId);
+
+      // Force CodeEditor to update its text immediately if a file is open
+      setConsoleOutput(prev => [...prev, `⏪ ${username} reverted the project.`]);
     };
 
     const handleFileRenamed = (event) => {

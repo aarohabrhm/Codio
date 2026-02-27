@@ -132,6 +132,12 @@ export function useCollaboration(projectId) {
         detail: { socketId, userId, username, fileId }
       }));
     });
+    socket.on('project-reverted', ({ files, cpId, username }) => {
+      console.log(`⏪ ${username} reverted the project!`);
+      window.dispatchEvent(new CustomEvent('remote-project-reverted', {
+        detail: { files, cpId, username }
+      }));
+    });
 
     socket.on('user-file-change', ({ socketId, userId, username, fileId }) => {
       console.log(`📄 ${username} opened file:`, fileId);
@@ -225,6 +231,11 @@ export function useCollaboration(projectId) {
       socketRef.current.emit('file-deleted', { fileId });
     }
   }, []);
+  const sendProjectReverted = useCallback((files, cpId) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('project-reverted', { files, cpId });
+    }
+  }, []);
 
   const sendChatMessage = useCallback((text) => {
     if (socketRef.current?.connected) {
@@ -262,6 +273,7 @@ export function useCollaboration(projectId) {
     sendFileDeleted,
     sendChatMessage,
     sendChatTyping,
-    markMessagesAsSeen
+    markMessagesAsSeen,
+    sendProjectReverted
   };
 }

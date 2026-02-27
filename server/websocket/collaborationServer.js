@@ -169,6 +169,15 @@ export function setupWebSocket(server) {
         fileId
       });
     });
+    socket.on('project-reverted', ({ files, cpId }) => {
+      if (!clientInfo) return;
+      // Tell everyone ELSE in the room to replace their files
+      socket.to(clientInfo.projectId).emit('project-reverted', {
+        files,
+        cpId,
+        username: clientInfo.username
+      });
+    });
 
     socket.on('file-select', ({ fileId }) => {
       if (!clientInfo) return;
