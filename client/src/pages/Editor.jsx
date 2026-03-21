@@ -103,11 +103,13 @@ export default function Editor() {
     sendChatTyping,
     markMessagesAsSeen,
     sendCheckpointUpdated,
+    socketRef,
   } = useCollaboration(projectId);
 
   const editorRef = useRef(null);
   const saveRef = useRef(null);
   const myUserId = getMyUserId();
+  const bottomPanelRef = useRef(null);
 
   // UI State
   const [unseenCount, setUnseenCount] = useState(0);
@@ -767,7 +769,7 @@ useEffect(() => {
             </button>
             <div className={`w-px h-5 mx-2 ${isDark ? 'bg-[#2a2a2a]' : 'bg-gray-200'}`} />
             <button 
-              onClick={handleRunCode} 
+              onClick={() => bottomPanelRef.current?.handleRun()} 
               disabled={!activeFile} 
               className="px-3 py-1 text-xs text-white bg-emerald-600 rounded flex items-center gap-1.5 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -849,21 +851,18 @@ useEffect(() => {
         </div>
 
         <BottomPanel
-          activeTab={activeBottomTab}
-          setActiveTab={setActiveBottomTab}
-          consoleOutput={consoleOutput}
-          terminalOutput={terminalOutput}
-          terminalInput={terminalInput}
-          setTerminalInput={setTerminalInput}
-          problems={problems}
-          onTerminalExecute={onTerminalExecute}
-          onClearAll={() => { 
-            setConsoleOutput([]); 
-            setTerminalOutput([]); 
-            setProblems([]); 
-          }}
-          files={files}
-        />
+  ref={bottomPanelRef}
+  activeTab={activeBottomTab}
+  setActiveTab={setActiveBottomTab}
+  problems={problems}
+  onClearAll={() => { 
+    setProblems([]); 
+  }}
+  files={files}
+  socket={socketRef.current}
+  activeFile={activeFile}
+  editorRef={editorRef}
+/>
       </main>
 
       <RightChatPanel

@@ -288,5 +288,6 @@ export function useCollaboration(projectId) {
     markMessagesAsSeen,
     sendProjectReverted,
     sendCheckpointUpdated,
+    socketRef,
   };
 }
