@@ -17,16 +17,13 @@ export const createCheckpoint = async (req, res) => {
     if (!message?.trim())
       return res.status(400).json({ message: "Commit message is required" });
 
-    // 1. Load project
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: "Project not found" });
     if (!canEdit(project, req.user.id))
       return res.status(403).json({ message: "Forbidden" });
 
-    // 2. Deep-clone the files at this exact moment
     const filesSnapshot = JSON.parse(JSON.stringify(project.files || {}));
 
-    // 3. Unshift (prepend) to Mongoose array so it auto-generates the _id
     project.checkpoints.unshift({
       message: message.trim(),
       description: description.trim(),
@@ -34,12 +31,15 @@ export const createCheckpoint = async (req, res) => {
       createdBy: req.user.id,
     });
 
-    // 4. Explicitly tell Mongoose the array changed, then save
     project.markModified("checkpoints");
     await project.save();
 
-    // 5. Return the newly created checkpoint (now guaranteed to have an _id)
     const created = project.checkpoints[0];
+
+    // UPDATE HEAD
+    project.currentCheckpointId = created._id;
+    await project.save();
+
     console.log("✅ Checkpoint saved:", created._id);
     return res.status(201).json(created);
 
@@ -53,7 +53,7 @@ export const createCheckpoint = async (req, res) => {
 export const getCheckpoints = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
-      .select("checkpoints owner collaborators isPublic")
+      .select("checkpoints owner collaborators isPublic currentCheckpointId") // ADD currentCheckpointId
       .populate("checkpoints.createdBy", "fullname username avatar");
 
     if (!project) return res.status(404).json({ message: "Project not found" });
@@ -63,14 +63,14 @@ export const getCheckpoints = async (req, res) => {
     if (!isOwner && !isCollab && !project.isPublic)
       return res.status(403).json({ message: "Forbidden" });
 
-    // Omit the heavy `files` blob from the list — just metadata
     const slim = project.checkpoints.map(
       ({ _id, message, description, createdBy, createdAt }) => ({
         _id, message, description, createdBy, createdAt,
       })
     );
 
-    return res.json(slim);
+    // Return both the list AND the current HEAD
+    return res.json({ checkpoints: slim, currentCheckpointId: project.currentCheckpointId });
   } catch (err) {
     console.error("getCheckpoints error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -88,11 +88,12 @@ export const revertToCheckpoint = async (req, res) => {
     const cp = project.checkpoints.id(req.params.cpId);
     if (!cp) return res.status(404).json({ message: "Checkpoint not found" });
 
-    // Overwrite the live files with the checkpoint's snapshot
     project.files = JSON.parse(JSON.stringify(cp.files));
-
-    // CRITICAL: Mongoose requires this for 'Mixed' / 'Object' types!
     project.markModified("files");
+
+    // UPDATE HEAD
+    project.currentCheckpointId = cp._id;
+
     await project.save();
 
     console.log("✅ Reverted to checkpoint:", req.params.cpId);

@@ -1,7 +1,16 @@
 import { useState, useCallback } from "react";
 import axios from "axios"; // or replace with your fetch wrapper
 
-const BASE = "/api/projects"; // adjust if your API base differs
+const BASE = "http://localhost:8000/api/projects";
+
+const getAuthHeader = () => ({
+  Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}`
+});
+
+// Then in every axios call, add headers. Example for load():
+const { data } = await axios.get(`${BASE}/${projectId}/checkpoints`, {
+  headers: getAuthHeader()
+});
 
 /**
  * useCheckpoints

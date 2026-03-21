@@ -144,75 +144,79 @@ export default function Editor() {
 
   // --- Checkpoint Functions ---
   const fetchCheckpoints = useCallback(async () => {
-    if (!projectId) return;
-    try {
-      const res = await axios.get(`http://localhost:8000/api/projects/${projectId}/checkpoints`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` }
-      });
-      setCheckpoints(res.data);
-      // Initialize HEAD to the latest checkpoint if not set yet
-      if (res.data.length > 0) {
-        setCurrentHeadId(prev => prev || res.data[0]._id);
-      }
-    } catch (err) {
-      console.error("Failed to load checkpoints", err);
+  if (!projectId) return;
+  try {
+    const res = await axios.get(`http://localhost:8000/api/projects/${projectId}/checkpoints`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` }
+    });
+
+    // Response is now { checkpoints: [...], currentCheckpointId: "..." }
+    setCheckpoints(res.data.checkpoints);
+
+    if (res.data.currentCheckpointId) {
+      setCurrentHeadId(res.data.currentCheckpointId);
     }
-  }, [projectId]);
+  } catch (err) {
+    console.error("Failed to load checkpoints", err);
+  }
+}, [projectId]);
 
   useEffect(() => {
     fetchCheckpoints();
   }, [fetchCheckpoints]);
 
   const handleCommitCheckpoint = async (message, description) => {
-    try {
-      const res = await axios.post(
-        `http://localhost:8000/api/projects/${projectId}/checkpoints`,
-        { message, description },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
-      );
-      
-      setCurrentHeadId(res.data._id); // Move HEAD to the newly created checkpoint
-      fetchCheckpoints(); 
-      setConsoleOutput(prev => [...prev, `✅ Checkpoint saved: ${message}`]);
-    } catch (err) {
-      console.error(err);
-      setConsoleOutput(prev => [...prev, "❌ Failed to save checkpoint."]);
-    }
-  };
+  try {
+    await handleSave();
+    
+    const res = await axios.post(
+      `http://localhost:8000/api/projects/${projectId}/checkpoints`,
+      { message, description },
+      { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
+    );
+    
+    setCurrentHeadId(res.data._id);
+    fetchCheckpoints(); 
+    setConsoleOutput(prev => [...prev, `✅ Checkpoint saved: ${message}`]);
+  } catch (err) {
+    console.error(err);
+    setConsoleOutput(prev => [...prev, "❌ Failed to save checkpoint."]);
+  }
+};
 
-  const handleRevertCheckpoint = async (cpId) => {
-    try {
-      const res = await axios.post(
-        `http://localhost:8000/api/projects/${projectId}/checkpoints/${cpId}/revert`,
-        {},
-        { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
-      );
-      
-      const newFiles = res.data.files;
-      
-      // Update local state
-      setFiles(newFiles); 
-      setCurrentHeadId(cpId);
-      
-      // Update editor text instantly
-      if (activeFileId && newFiles[activeFileId]) {
-         window.dispatchEvent(new CustomEvent('remote-code-update', {
-           detail: { 
-             fileId: activeFileId, 
-             content: newFiles[activeFileId].content 
-           }
-         }));
+const handleRevertCheckpoint = async (cpId) => {
+  try {
+    const res = await axios.post(
+      `http://localhost:8000/api/projects/${projectId}/checkpoints/${cpId}/revert`,
+      {},
+      { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
+    );
+    
+    const newFiles = res.data.files;
+    
+    console.log("Reverted files:", JSON.stringify(newFiles, null, 2));
+    
+    setFiles(newFiles);
+    setCurrentHeadId(cpId);
+    
+    Object.keys(newFiles).forEach(fileId => {
+      if (newFiles[fileId].type === 'file') {
+        window.dispatchEvent(new CustomEvent('remote-code-update', {
+          detail: { 
+            fileId, 
+            content: newFiles[fileId].content ?? ''
+          }
+        }));
       }
+    });
 
-      // Tell other connected users that we reverted!
-      sendProjectReverted(newFiles, cpId);
-
-      setConsoleOutput(prev => [...prev, "⏪ Successfully reverted to checkpoint."]);
-    } catch (err) {
-      console.error(err);
-      setConsoleOutput(prev => [...prev, "❌ Failed to revert checkpoint."]);
-    }
-  };
+    sendProjectReverted(newFiles, cpId);
+    setConsoleOutput(prev => [...prev, "⏪ Successfully reverted to checkpoint."]);
+  } catch (err) {
+    console.error(err);
+    setConsoleOutput(prev => [...prev, "❌ Failed to revert checkpoint."]);
+  }
+};
 
   const handleDeleteCheckpoint = async (cpId) => {
     try {
@@ -292,84 +296,93 @@ export default function Editor() {
 
   // Listen for remote file operations
   useEffect(() => {
-    const handleFileCreated = (event) => {
-      const { parentId, fileData } = event.detail;
-      setFiles(prev => ({
-        ...prev,
-        [fileData.id]: fileData,
-        [parentId]: {
-          ...prev[parentId],
-          children: [...(prev[parentId]?.children || []), fileData.id]
-        }
-      }));
-    };
+  const handleFileCreated = (event) => {
+    const { parentId, fileData } = event.detail;
+    setFiles(prev => ({
+      ...prev,
+      [fileData.id]: fileData,
+      [parentId]: {
+        ...prev[parentId],
+        children: [...(prev[parentId]?.children || []), fileData.id]
+      }
+    }));
+  };
+
+  const handleFolderCreated = (event) => {
+    const { parentId, folderData } = event.detail;
+    setFiles(prev => ({
+      ...prev,
+      [folderData.id]: folderData,
+      [parentId]: {
+        ...prev[parentId],
+        children: [...(prev[parentId]?.children || []), folderData.id]
+      }
+    }));
+  };
+
+  const handleProjectReverted = (event) => {
+    const { files: revertedFiles, cpId, username } = event.detail;
     
+    setFiles(revertedFiles);
+    setCurrentHeadId(cpId);
 
-    const handleFolderCreated = (event) => {
-      const { parentId, folderData } = event.detail;
-      setFiles(prev => ({
-        ...prev,
-        [folderData.id]: folderData,
-        [parentId]: {
-          ...prev[parentId],
-          children: [...(prev[parentId]?.children || []), folderData.id]
-        }
-      }));
-    };
-    const handleProjectReverted = (event) => {
-      const { files: revertedFiles, cpId, username } = event.detail;
-      
-      // Update local file state to match the revert
-      setFiles(revertedFiles);
-      
-      // Move the Green Dot to match
-      setCurrentHeadId(cpId);
-
-      // Force CodeEditor to update its text immediately if a file is open
-      setConsoleOutput(prev => [...prev, `⏪ ${username} reverted the project.`]);
-    };
-
-    const handleFileRenamed = (event) => {
-      const { fileId, newName } = event.detail;
-      setFiles(prev => ({
-        ...prev,
-        [fileId]: {
-          ...prev[fileId],
-          name: newName
-        }
-      }));
-    };
-
-    const handleFileDeleted = (event) => {
-      const { fileId } = event.detail;
-      setFiles(prev => {
-        const newFiles = { ...prev };
-        const file = newFiles[fileId];
-        
-        if (file && file.parent) {
-          const parent = newFiles[file.parent];
-          if (parent) {
-            parent.children = parent.children.filter(id => id !== fileId);
+    Object.keys(revertedFiles).forEach(fileId => {
+      if (revertedFiles[fileId].type === 'file') {
+        window.dispatchEvent(new CustomEvent('remote-code-update', {
+          detail: {
+            fileId,
+            content: revertedFiles[fileId].content ?? ''
           }
+        }));
+      }
+    });
+
+    setConsoleOutput(prev => [...prev, `⏪ ${username} reverted the project.`]);
+  };
+
+  const handleFileRenamed = (event) => {
+    const { fileId, newName } = event.detail;
+    setFiles(prev => ({
+      ...prev,
+      [fileId]: {
+        ...prev[fileId],
+        name: newName
+      }
+    }));
+  };
+
+  const handleFileDeleted = (event) => {
+    const { fileId } = event.detail;
+    setFiles(prev => {
+      const newFiles = { ...prev };
+      const file = newFiles[fileId];
+      
+      if (file && file.parent) {
+        const parent = newFiles[file.parent];
+        if (parent) {
+          parent.children = parent.children.filter(id => id !== fileId);
         }
-        
-        delete newFiles[fileId];
-        return newFiles;
-      });
-    };
+      }
+      
+      delete newFiles[fileId];
+      return newFiles;
+    });
+  };
 
-    window.addEventListener('remote-file-created', handleFileCreated);
-    window.addEventListener('remote-folder-created', handleFolderCreated);
-    window.addEventListener('remote-file-renamed', handleFileRenamed);
-    window.addEventListener('remote-file-deleted', handleFileDeleted);
+  window.addEventListener('remote-file-created', handleFileCreated);
+  window.addEventListener('remote-folder-created', handleFolderCreated);
+  window.addEventListener('remote-file-renamed', handleFileRenamed);
+  window.addEventListener('remote-file-deleted', handleFileDeleted);
+  window.addEventListener('remote-project-reverted', handleProjectReverted);
 
-    return () => {
-      window.removeEventListener('remote-file-created', handleFileCreated);
-      window.removeEventListener('remote-folder-created', handleFolderCreated);
-      window.removeEventListener('remote-file-renamed', handleFileRenamed);
-      window.removeEventListener('remote-file-deleted', handleFileDeleted);
-    };
-  }, [setFiles]);
+  return () => {
+    window.removeEventListener('remote-file-created', handleFileCreated);
+    window.removeEventListener('remote-folder-created', handleFolderCreated);
+    window.removeEventListener('remote-file-renamed', handleFileRenamed);
+    window.removeEventListener('remote-file-deleted', handleFileDeleted);
+    window.removeEventListener('remote-project-reverted', handleProjectReverted);
+  };
+}, [setFiles, activeFileId]);
 
   // Mark messages as seen
   useEffect(() => {

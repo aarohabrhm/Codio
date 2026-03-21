@@ -29,6 +29,7 @@ const projectSchema = new mongoose.Schema(
     files:         { type: mongoose.Schema.Types.Mixed, default: {} },
     // Array of checkpoint subdocuments — newest first by convention
     checkpoints:   { type: [checkpointSchema], default: [] },
+    currentCheckpointId: { type: mongoose.Schema.Types.ObjectId, default: null },
   },
   { timestamps: true }
 );
