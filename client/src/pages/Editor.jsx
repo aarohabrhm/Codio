@@ -101,7 +101,8 @@ export default function Editor() {
     sendProjectReverted,
     sendChatMessage,
     sendChatTyping,
-    markMessagesAsSeen
+    markMessagesAsSeen,
+    sendCheckpointUpdated,
   } = useCollaboration(projectId);
 
   const editorRef = useRef(null);
@@ -176,7 +177,8 @@ export default function Editor() {
     );
     
     setCurrentHeadId(res.data._id);
-    fetchCheckpoints(); 
+    fetchCheckpoints();
+    sendCheckpointUpdated(res.data._id); // ADD THIS
     setConsoleOutput(prev => [...prev, `✅ Checkpoint saved: ${message}`]);
   } catch (err) {
     console.error(err);
@@ -194,23 +196,19 @@ const handleRevertCheckpoint = async (cpId) => {
     
     const newFiles = res.data.files;
     
-    console.log("Reverted files:", JSON.stringify(newFiles, null, 2));
-    
     setFiles(newFiles);
     setCurrentHeadId(cpId);
     
     Object.keys(newFiles).forEach(fileId => {
       if (newFiles[fileId].type === 'file') {
         window.dispatchEvent(new CustomEvent('remote-code-update', {
-          detail: { 
-            fileId, 
-            content: newFiles[fileId].content ?? ''
-          }
+          detail: { fileId, content: newFiles[fileId].content ?? '' }
         }));
       }
     });
 
     sendProjectReverted(newFiles, cpId);
+    sendCheckpointUpdated(cpId); // ADD THIS
     setConsoleOutput(prev => [...prev, "⏪ Successfully reverted to checkpoint."]);
   } catch (err) {
     console.error(err);
@@ -218,19 +216,20 @@ const handleRevertCheckpoint = async (cpId) => {
   }
 };
 
-  const handleDeleteCheckpoint = async (cpId) => {
-    try {
-      await axios.delete(
-        `http://localhost:8000/api/projects/${projectId}/checkpoints/${cpId}`,
-        { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
-      );
-      fetchCheckpoints(); 
-      setConsoleOutput(prev => [...prev, "🗑️ Checkpoint deleted."]);
-    } catch (err) {
-      console.error(err);
-      setConsoleOutput(prev => [...prev, "❌ Failed to delete checkpoint."]);
-    }
-  };
+const handleDeleteCheckpoint = async (cpId) => {
+  try {
+    await axios.delete(
+      `http://localhost:8000/api/projects/${projectId}/checkpoints/${cpId}`,
+      { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')}` } }
+    );
+    fetchCheckpoints();
+    sendCheckpointUpdated(null); // ADD THIS
+    setConsoleOutput(prev => [...prev, "🗑️ Checkpoint deleted."]);
+  } catch (err) {
+    console.error(err);
+    setConsoleOutput(prev => [...prev, "❌ Failed to delete checkpoint."]);
+  }
+};
   // ----------------------------
 
   const createFile = useCallback((parentId, name) => {
@@ -383,6 +382,17 @@ const handleRevertCheckpoint = async (cpId) => {
     window.removeEventListener('remote-project-reverted', handleProjectReverted);
   };
 }, [setFiles, activeFileId]);
+
+useEffect(() => {
+  const handleRemoteCheckpointUpdated = () => {
+    fetchCheckpoints();
+  };
+
+  window.addEventListener('remote-checkpoint-updated', handleRemoteCheckpointUpdated);
+  return () => {
+    window.removeEventListener('remote-checkpoint-updated', handleRemoteCheckpointUpdated);
+  };
+}, [fetchCheckpoints]);
 
   // Mark messages as seen
   useEffect(() => {

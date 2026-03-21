@@ -143,6 +143,13 @@ export function useCollaboration(projectId) {
       console.log(`📄 ${username} opened file:`, fileId);
     });
 
+    socket.on('checkpoint-updated', ({ cpId, username }) => {
+      console.log(`🔖 ${username} updated checkpoints`);
+      window.dispatchEvent(new CustomEvent('remote-checkpoint-updated', {
+        detail: { cpId, username }
+      }));
+    });
+
     socket.on('chat-message', (message) => {
       setTeamMessages(prev => [...prev, message]);
       setTypingUsers(prev => prev.filter(u => u !== message.senderUsername));
@@ -248,6 +255,11 @@ export function useCollaboration(projectId) {
       socketRef.current.emit('chat-typing', { typing });
     }
   }, []);
+  const sendCheckpointUpdated = useCallback((cpId) => {
+  if (socketRef.current?.connected) {
+    socketRef.current.emit('checkpoint-updated', { cpId });
+  }
+}, []);
 
   const markMessagesAsSeen = useCallback((messageIds) => {
     if (socketRef.current?.connected && messageIds.length > 0) {
@@ -274,6 +286,7 @@ export function useCollaboration(projectId) {
     sendChatMessage,
     sendChatTyping,
     markMessagesAsSeen,
-    sendProjectReverted
+    sendProjectReverted,
+    sendCheckpointUpdated,
   };
 }

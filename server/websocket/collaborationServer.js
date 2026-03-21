@@ -254,6 +254,14 @@ export function setupWebSocket(server) {
         console.error('❌ Chat seen error:', err);
       }
     });
+    socket.on('checkpoint-updated', ({ cpId }) => {
+      if (!clientInfo) return;
+      // Tell everyone ELSE in the room to refresh their checkpoints
+      socket.to(clientInfo.projectId).emit('checkpoint-updated', {
+        cpId,
+        username: clientInfo.username
+      });
+    });
 
     socket.on('disconnect', () => {
       if (clientInfo) {
