@@ -13,6 +13,7 @@ import projectRoutes from "./routes/projectRoutes.js";
 import executeRouter from './routes/execute.js';
 import chatRoutes from "./routes/chatRoutes.js";
 import checkpointRoutes from "./routes/checkpointRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,6 +36,7 @@ app.use(cors({
   origin: 'http://localhost:5173',
   credentials: true
 }));
+
 app.use(express.json()); // Parses req.body for JSON
 app.use(express.urlencoded({ extended: true }));
 
@@ -49,6 +51,7 @@ app.get('/', (req, res) => {
 });
 app.use('/', router);
 app.use('/api/auth', authRoutes);
+app.use("/api/ai", aiRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/execute', executeRouter);
 app.use('/api/projects', projectsRouter); 

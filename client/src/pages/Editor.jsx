@@ -879,6 +879,8 @@ useEffect(() => {
         onClearChat={() => setChatMessages([])}
         myUserId={myUserId}
         unseenCount={unseenCount}
+        activeFile={activeFile}        
+        editorRef={editorRef}
       />
       
       <style>{`
