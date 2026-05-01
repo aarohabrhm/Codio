@@ -137,22 +137,12 @@ export default function DashboardSidebar({ projects, currentTab, currentView, on
         </div>
 
         {/* Tools Section */}
-        <div>
-          <div className="flex items-center gap-2 px-3 mb-3">
-            <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">Tools</span>
-          </div>
-
-          <nav className="space-y-0.5">
-            <NavLink to="/version-control" icon={FolderGit2} label="Version Control" />
-            <NavLink to="/appearance" icon={Palette} label="Appearance" />
-          </nav>
-        </div>
+        
       </div>
 
       {/* Bottom Navigation */}
       <div className={`px-3 py-4 border-t ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
         <nav className="space-y-0.5">
-          <NavLink to="/support" icon={HelpCircle} label="Help & Support" />
           <NavLink to="/settings" icon={Settings} label="Settings" />
         </nav>
       </div>

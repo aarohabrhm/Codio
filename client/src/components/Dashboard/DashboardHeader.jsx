@@ -104,14 +104,6 @@ export default function DashboardHeader({ searchValue, setSearchValue, user, onL
                     <Settings size={16} />
                     <span className="text-sm">Settings</span>
                   </Link>
-                  <Link
-                    to="/support"
-                    className={`flex items-center gap-3 px-4 py-2.5 transition ${isDark ? 'text-gray-400 hover:bg-[#1a1a1a] hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <HelpCircle size={16} />
-                    <span className="text-sm">Help & Support</span>
-                  </Link>
                   <div className={`border-t my-1 ${isDark ? 'border-[#2a2a2a]' : 'border-gray-200'}`} />
                   <button
                     onClick={() => {

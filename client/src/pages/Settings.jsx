@@ -16,13 +16,17 @@ import {
   Sun,
   Monitor,
   Check,
+  LogOut,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { LogoutModal } from "../components/Dashboard";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { theme, setTheme, isDark } = useTheme();
   const [activeSection, setActiveSection] = useState("general");
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -66,6 +70,17 @@ export default function SettingsPage() {
       />
     </button>
   );
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("rememberMe");
+
+    navigate("/login");
+  };
 
   const renderSettingsContent = () => {
     switch (activeSection) {
@@ -306,6 +321,21 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
+
+        {/* Logout Button */}
+        <div className="px-2 pb-4 border-t border-transparent">
+          <button
+            onClick={() => setIsLogoutModalOpen(true)}
+            className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition ${
+              isDark
+                ? "bg-transparent text-white border border-gray-700/50"
+                : "bg-transparent text-black border border-gray-700/50"
+            }`}
+          >
+            <LogOut size={16} />
+            <span>Logout</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -342,6 +372,13 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        isLoggingOut={isLoggingOut}
+      />
     </div>
   );
 }

@@ -69,22 +69,7 @@ export default function QuickActions({ onNewProject }) {
           accent="purple"
           isDark={isDark}
         />
-        <QuickActionCard 
-          icon={UserPlus} 
-          label="New Team" 
-          description="Create a team workspace"
-          to="/teams/new" 
-          accent="green"
-          isDark={isDark}
-        />
-        <QuickActionCard 
-          icon={Building} 
-          label="Organization" 
-          description="Manage your org"
-          to="/orgs/new" 
-          accent="orange"
-          isDark={isDark}
-        />
+        
       </div>
     </div>
   );
