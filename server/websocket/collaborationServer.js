@@ -234,12 +234,11 @@ export function setupWebSocket(server) {
   try {
     await fs.promises.writeFile(filePath, sourceCode);
 
-    // 1. CREATE container (don't start yet)
     container = await docker.createContainer({
       Image: runtime.image,
       Cmd: runtime.cmd(filename),
       WorkingDir: '/app',
-      Tty: true,
+      Tty: true,          // ← keep true for interactive input
       OpenStdin: true,
       StdinOnce: false,
       AttachStdin: true,
@@ -252,7 +251,7 @@ export function setupWebSocket(server) {
       },
     });
 
-    // 2. COPY file into container before starting
+    // Copy source file into container
     const fileContent = await fs.promises.readFile(filePath);
     await new Promise((resolve, reject) => {
       const pack = tar.pack();
@@ -266,16 +265,21 @@ export function setupWebSocket(server) {
       });
     });
 
-    // 3. ATTACH before starting so we don't miss early output
+    // IMPORTANT: hijack:true gives us a raw duplex socket when Tty:true
+    // This is the correct way to get a writable stdin with dockerode + TTY
     const stream = await container.attach({
-      stream: true, stdin: true, stdout: true, stderr: true,
+      stream: true,
+      stdin: true,
+      stdout: true,
+      stderr: true,
+      hijack: true,   // ← THIS is the key fix
     });
 
-    // 4. START container
     await container.start();
 
     activeSessions.set(socket.id, { container, stream, filePath });
 
+    // With Tty:true + hijack:true, stdout/stderr come as raw data (no multiplexing header)
     stream.on('data', (chunk) => {
       socket.emit('terminal-output', chunk.toString('utf8'));
     });
@@ -284,6 +288,10 @@ export function setupWebSocket(server) {
       socket.emit('terminal-output', '\r\n\x1b[90m[Process exited]\x1b[0m\r\n');
       fs.promises.unlink(filePath).catch(() => {});
       activeSessions.delete(socket.id);
+    });
+
+    stream.on('error', (err) => {
+      console.error('Stream error:', err.message);
     });
 
     container.wait().then(({ StatusCode }) => {
@@ -298,11 +306,11 @@ export function setupWebSocket(server) {
   }
 });
     socket.on('terminal-input', (data) => {
-      const session = activeSessions.get(socket.id);
-      if (session?.stream) {
-        session.stream.write(data);
-      }
-    });
+  const session = activeSessions.get(socket.id);
+  if (session?.stream) {
+    session.stream.write(data);  // writes to stdin via the hijacked stream
+  }
+});
 
     socket.on('terminal-kill', async () => {
       await killSession(socket.id);
