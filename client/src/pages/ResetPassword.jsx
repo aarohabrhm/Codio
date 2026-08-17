@@ -82,7 +82,7 @@ export default function ResetPassword() {
       subtitle="Enter your new password below"
     >
       {/* Toggle Link */}
-      <div className="text-center mb-6">
+      <div className="mb-6">
         <p className="text-dim">
           Link expired?{" "}
           <button
