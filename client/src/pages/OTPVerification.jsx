@@ -132,7 +132,7 @@ export default function OTPVerification({ email, onVerified = () => {}, onBack =
         </div>
 
         {/* Resend Section */}
-        <div className="text-center pt-2">
+        <div className="pt-2">
           <p className="font-mono text-[11.5px] text-muted mb-3">Didn't receive the code?</p>
           <button
             type="button"

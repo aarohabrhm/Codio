@@ -49,7 +49,7 @@ export default function ForgotPassword() {
       subtitle="Enter your email to receive a reset link"
     >
       {/* Toggle Link */}
-      <div className="text-center mb-6">
+      <div className="mb-6">
         <p className="text-dim">
           Remember your password?{" "}
           <button

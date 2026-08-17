@@ -135,13 +135,14 @@ export default function Login() {
   };
 
   return (
-    <AuthLayout 
-      title={isLogin ? 'Welcome Back' : 'Create Account'}
-      subtitle={isLogin ? 'Sign in to continue coding' : 'Join thousands of developers'}
+    <AuthLayout
+      eyebrow={isLogin ? 'Sign in' : 'Create account'}
+      title={isLogin ? 'Welcome back,' : 'Start building,'}
+      titleItalic={isLogin ? 'pick up where you left off.' : 'together from the first line.'}
     >
       {/* Toggle Link */}
-      <div className="text-center mb-6">
-        <p className="text-dim">
+      <div className="mb-6">
+        <p className="text-[14px] text-dim">
           {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
           <button
             type="button"
