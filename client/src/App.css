@@ -1,5 +1,38 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
 @import "tailwindcss";
+
 @theme {
-  --font-montserrat: "Montserrat", sans-serif; 
+  /* --- Landing palette: bone paper, ink, editor-caret accents --- */
+  --color-paper: #efefea;
+  --color-linen: #e3e4dc;
+  --color-card: #f6f6f2;
+  --color-ink: #171a17;
+  --color-graphite: #5b615a;
+  --color-caret: #2b4bf0;
+  --color-caret-amber: #e9a227;
+  --color-caret-rose: #d2506c;
+
+  /* --- Type: a variable serif for display, sans for body, mono as chrome --- */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+  --font-montserrat: "Montserrat", sans-serif;
+
+  /* --- Radii --- */
+  --radius-btn: 9px;
+  --radius-card: 18px;
+  --radius-panel: 22px;
+
+  /* --- The eyebrow caret: a text cursor, blinking on a real cursor's cadence --- */
+  --animate-caret: codio-blink 1.4s steps(1) infinite;
+}
+
+@keyframes codio-blink {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  56%,
+  100% {
+    opacity: 0.15;
+  }
 }

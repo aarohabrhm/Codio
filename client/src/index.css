@@ -48,6 +48,25 @@ body {
 	height: 100vh;
 }
 
+/* The marketing landing page is a tall, always-light document. It opts out of
+   the app shell's viewport-locked #root and its theme-driven body background,
+   which would otherwise clip it and paint black behind it in dark mode. */
+:root:has(.landing-root),
+body:has(.landing-root) {
+	background: #efefea;
+}
+
+/* The landing page is light-only by design. Declaring that stops browsers
+   with auto-dark-mode from inverting it, without affecting the app shell. */
+:root:has(.landing-root) {
+	color-scheme: light;
+}
+
+#root:has(.landing-root) {
+	height: auto;
+	min-height: 100vh;
+}
+
 /* Theme utility classes */
 .theme-bg-primary { background-color: var(--bg-primary); }
 .theme-bg-secondary { background-color: var(--bg-secondary); }
