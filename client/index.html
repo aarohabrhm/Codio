@@ -11,10 +11,30 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Instrument+Sans:ital,wght@0,400..700;1,400..600&family=JetBrains+Mono:wght@400;500;600&family=Montserrat:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Instrument+Sans:ital,wght@0,400..700;1,400..600&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <title>Codio — write code together, live, in one browser tab</title>
+    <script>
+      // Paint the right theme before React mounts. ThemeContext resolves to
+      // 'dark' on its first render, so without this a light-mode user sees one
+      // frame of the terminal palette on every load.
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme') || 'system';
+          var resolved =
+            stored === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : stored;
+          document.documentElement.classList.add(resolved);
+          document.documentElement.setAttribute('data-theme', resolved);
+        } catch (e) {
+          /* private mode / storage blocked — React will sort it out */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -24,7 +24,7 @@ function App() {
         <Route
           path="/editor/:projectId"
           element={
-            <Suspense fallback={<div style={{ height: '100vh', background: 'var(--bg-primary)' }} />}>
+            <Suspense fallback={<div style={{ height: '100vh', background: 'var(--surface-page)' }} />}>
               <Editor />
             </Suspense>
           }
