@@ -124,17 +124,6 @@ export default function SettingsPage() {
 
                 <div className={`flex items-center justify-between py-3 border-b border-line`}>
                   <div>
-                    <div className={`text-sm text-primary`}>Word Wrap</div>
-                    <div className={`text-xs text-dim`}>Wrap long lines of code</div>
-                  </div>
-                  <Toggle
-                    enabled={settings.wordWrap}
-                    onChange={(v) => setSettings({ ...settings, wordWrap: v })}
-                  />
-                </div>
-
-                <div className={`flex items-center justify-between py-3 border-b border-line`}>
-                  <div>
                     <div className={`text-sm text-primary`}>Minimap</div>
                     <div className={`text-xs text-dim`}>Show code minimap on the side</div>
                   </div>
