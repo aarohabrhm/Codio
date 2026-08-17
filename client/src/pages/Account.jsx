@@ -2,11 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Edit2, X, LogOut, Loader2 } from "lucide-react";
 import axios from "axios";
-import { useTheme } from "../context/ThemeContext";
 
 export default function Account() {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
 
@@ -60,38 +58,38 @@ export default function Account() {
 
   if (loading) {
     return (
-      <div className={`flex h-screen w-full items-center justify-center ${isDark ? 'bg-[#0a0a0a]' : 'bg-white'}`}>
-        <Loader2 className="animate-spin w-8 h-8 text-blue-500" />
+      <div className={`flex h-screen w-full items-center justify-center bg-surface-page`}>
+        <Loader2 className="animate-spin w-8 h-8 text-accent-fg" />
       </div>
     );
   }
 
   if (!userData) {
     return (
-      <div className={`flex h-screen w-full items-center justify-center ${isDark ? 'bg-[#0a0a0a] text-gray-400' : 'bg-white text-gray-600'}`}>
+      <div className={`flex h-screen w-full items-center justify-center bg-surface-page text-dim`}>
         <p>Failed to load user data</p>
       </div>
     );
   }
 
   return (
-    <div className={`flex h-screen w-full ${isDark ? 'bg-[#0a0a0a] text-gray-200' : 'bg-white text-gray-900'}`}>
+    <div className={`flex h-screen w-full bg-surface-page text-primary`}>
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
         {/* Tab Bar */}
-        <div className={`h-12 border-b flex items-center px-4 ${isDark ? 'bg-[#0a0a0a] border-[#1a1a1a]' : 'bg-white border-gray-200'}`}>
+        <div className={`h-12 border-b flex items-center px-4 bg-surface-page border-line`}>
           <div className="flex items-center gap-1">
             <button
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm ${isDark ? 'bg-[#1a1a1a] text-white' : 'bg-gray-100 text-gray-900'}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm bg-surface-raised text-primary`}
             >
               <User size={14} />
               Account
               <button
                 onClick={() => navigate(-1)}
-                className={`ml-2 p-0.5 rounded ${isDark ? 'hover:bg-[#2a2a2a]' : 'hover:bg-gray-200'}`}
+                className={`ml-2 p-0.5 rounded hover:bg-surface-hover`}
               >
-                <X size={12} className={`${isDark ? 'text-gray-500 hover:text-white' : 'text-gray-400 hover:text-gray-900'}`} />
+                <X size={12} className={`text-muted hover:text-primary`} />
               </button>
             </button>
           </div>
@@ -99,23 +97,23 @@ export default function Account() {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-8">
-          <h1 className={`text-2xl font-semibold mb-8 ${isDark ? 'text-white' : 'text-gray-900'}`}>Account</h1>
+          <h1 className="mb-8 font-display text-[28px] leading-[1.08] tracking-[-0.022em] text-primary [font-optical-sizing:auto]">Account</h1>
 
           {/* User Profile Card */}
-          <div className={`flex items-center gap-4 mb-8 p-4 rounded-xl border ${isDark ? 'bg-[#0f0f0f] border-[#1a1a1a]' : 'bg-gray-50 border-gray-200'}`}>
+          <div className={`flex items-center gap-4 mb-8 p-4 rounded-xl border bg-surface-panel border-line`}>
             <img 
               src={userData.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"} 
               alt="Profile" 
-              className={`w-16 h-16 rounded-full object-cover border ${isDark ? 'border-[#2a2a2a]' : 'border-gray-200'}`}
+              className={`w-16 h-16 rounded-full object-cover border border-line-strong`}
             />
             <div>
-              <div className={`text-lg font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <div className={`text-lg font-medium text-primary`}>
                 {userData.firstName} {userData.lastName}
               </div>
-              <div className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{userData.location}</div>
+              <div className={`text-sm text-dim`}>{userData.location}</div>
             </div>
             <div className="ml-auto">
-              <span className={`px-3 py-1 rounded-full text-xs text-cyan-400 border border-cyan-400/30 ${isDark ? 'bg-[#1a1a1a]' : 'bg-cyan-50'}`}>
+              <span className={`px-3 py-1 rounded-full text-xs text-accent-fg border border-accent/30 bg-accent/10`}>
                 {userData.status}
               </span>
             </div>
@@ -124,56 +122,56 @@ export default function Account() {
           
 
           {/* Personal Information */}
-          <div className={`rounded-xl border p-6 mb-6 ${isDark ? 'bg-[#0f0f0f] border-[#1a1a1a]' : 'bg-gray-50 border-gray-200'}`}>
-            <h2 className={`text-lg font-medium mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Personal Information</h2>
+          <div className={`rounded-xl border p-6 mb-6 bg-surface-panel border-line`}>
+            <h2 className="mb-6 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-muted">Personal Information</h2>
 
             <div className="space-y-4">
-              <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
+              <div className={`flex items-center justify-between py-3 border-b border-line`}>
                 <div>
-                  <div className={`text-xs mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>First name</div>
-                  <div className={`text-sm flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <div className={`text-xs mb-1 text-dim`}>First name</div>
+                  <div className={`text-sm flex items-center gap-2 text-primary`}>
                     {userData.firstName}
-                    <Edit2 size={12} className={`cursor-pointer ${isDark ? 'text-gray-500 hover:text-white' : 'text-gray-400 hover:text-gray-900'}`} />
+                    <Edit2 size={12} className={`cursor-pointer text-muted hover:text-primary`} />
                   </div>
                 </div>
               </div>
 
-              <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
+              <div className={`flex items-center justify-between py-3 border-b border-line`}>
                 <div>
-                  <div className={`text-xs mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Last name</div>
-                  <div className={`text-sm flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <div className={`text-xs mb-1 text-dim`}>Last name</div>
+                  <div className={`text-sm flex items-center gap-2 text-primary`}>
                     {userData.lastName}
-                    <Edit2 size={12} className={`cursor-pointer ${isDark ? 'text-gray-500 hover:text-white' : 'text-gray-400 hover:text-gray-900'}`} />
+                    <Edit2 size={12} className={`cursor-pointer text-muted hover:text-primary`} />
                   </div>
                 </div>
               </div>
 
-              <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
+              <div className={`flex items-center justify-between py-3 border-b border-line`}>
                 <div>
-                  <div className={`text-xs mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Email</div>
-                  <div className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{userData.email}</div>
+                  <div className={`text-xs mb-1 text-dim`}>Email</div>
+                  <div className={`text-sm text-primary`}>{userData.email}</div>
                 </div>
-                <button className={`text-xs ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>Edit</button>
+                <button className={`text-xs text-dim hover:text-primary`}>Edit</button>
               </div>
 
-              <div className={`flex items-center justify-between py-3 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
+              <div className={`flex items-center justify-between py-3 border-b border-line`}>
                 <div>
-                  <div className={`text-xs mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Phone Number</div>
-                  <div className={`text-sm flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <div className={`text-xs mb-1 text-dim`}>Phone Number</div>
+                  <div className={`text-sm flex items-center gap-2 text-primary`}>
                     {userData.phone}
                   </div>
                 </div>
-                <button className={`text-xs ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>Edit</button>
+                <button className={`text-xs text-dim hover:text-primary`}>Edit</button>
               </div>
             </div>
           </div>
 
 
           {/* Sign Out */}
-          <div className={`rounded-xl border p-6 ${isDark ? 'bg-[#0f0f0f] border-[#1a1a1a]' : 'bg-gray-50 border-gray-200'}`}>
+          <div className={`rounded-xl border p-6 bg-surface-panel border-line`}>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 text-red-400 hover:text-red-300 transition"
+              className="flex items-center gap-2 text-danger hover:text-danger transition"
             >
               <LogOut size={16} />
               <span>Sign out</span>
