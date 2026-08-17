@@ -1,20 +1,19 @@
 import { Link } from 'react-router-dom';
 import { Plus, Folder, UserPlus, Building } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
 
-const QuickActionCard = ({ icon: Icon, label, description, onClick, to, accent, isDark }) => {
+const QuickActionCard = ({ icon: Icon, label, description, onClick, to, accent }) => {
   const accentColors = {
-    blue: 'from-blue-500/10 to-blue-600/5 border-blue-500/20 hover:border-blue-500/40',
-    purple: 'from-purple-500/10 to-purple-600/5 border-purple-500/20 hover:border-purple-500/40',
-    green: 'from-emerald-500/10 to-emerald-600/5 border-emerald-500/20 hover:border-emerald-500/40',
-    orange: 'from-orange-500/10 to-orange-600/5 border-orange-500/20 hover:border-orange-500/40',
+    blue: 'from-accent/10 to-accent/5 border-accent/20 hover:border-accent/40',
+    purple: 'from-accent/10 to-accent/5 border-accent/20 hover:border-accent/40',
+    green: 'from-accent/10 to-accent/5 border-accent/20 hover:border-accent/40',
+    orange: 'from-accent/10 to-accent/5 border-accent/20 hover:border-accent/40',
   };
 
   const iconColors = {
-    blue: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-    purple: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
-    green: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    orange: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+    blue: 'text-accent-fg bg-accent/10 border-accent/20',
+    purple: 'text-accent-fg bg-accent/10 border-accent/20',
+    green: 'text-accent-fg bg-accent/10 border-accent/20',
+    orange: 'text-accent-fg bg-accent/10 border-accent/20',
   };
 
   const content = (
@@ -23,8 +22,8 @@ const QuickActionCard = ({ icon: Icon, label, description, onClick, to, accent, 
         <Icon size={20} />
       </div>
       <div className="mt-4">
-        <span className={`text-sm font-medium block ${isDark ? 'text-white' : 'text-gray-900'}`}>{label}</span>
-        <span className={`text-xs mt-0.5 block ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{description}</span>
+        <span className={`text-sm font-medium block text-primary`}>{label}</span>
+        <span className={`text-xs mt-0.5 block text-muted`}>{description}</span>
       </div>
     </>
   );
@@ -47,11 +46,10 @@ const QuickActionCard = ({ icon: Icon, label, description, onClick, to, accent, 
 };
 
 export default function QuickActions({ onNewProject }) {
-  const { isDark } = useTheme();
   
   return (
     <div className="mb-8">
-      <h2 className={`text-sm font-medium mb-4 uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Quick Actions</h2>
+      <h2 className="mb-4 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-muted">Quick Actions</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <QuickActionCard 
           icon={Plus} 
@@ -59,7 +57,6 @@ export default function QuickActions({ onNewProject }) {
           description="Create a new project"
           onClick={onNewProject} 
           accent="blue"
-          isDark={isDark}
         />
         <QuickActionCard 
           icon={Folder} 
@@ -67,7 +64,6 @@ export default function QuickActions({ onNewProject }) {
           description="Import existing code"
           to="/upload" 
           accent="purple"
-          isDark={isDark}
         />
         
       </div>

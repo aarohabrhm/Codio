@@ -1,9 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useTheme } from '../../context/ThemeContext';
 
 const cn = (...args) => args.filter(Boolean).join(' ');
 
-const Tab = ({ label, value, active, isDark }) => {
+const Tab = ({ label, value, active }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -19,20 +18,19 @@ const Tab = ({ label, value, active, isDark }) => {
       className={cn(
         'px-4 py-2 relative transition text-sm font-medium',
         active 
-          ? (isDark ? 'text-white' : 'text-gray-900')
-          : (isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700')
+          ? ('text-primary')
+          : ('text-muted hover:text-primary')
       )}
     >
       {label}
       {active && (
-        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500 rounded-t-full" />
+        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-accent rounded-t-full" />
       )}
     </button>
   );
 };
 
 export default function ProjectTabs({ currentTab }) {
-  const { isDark } = useTheme();
   
   const tabs = [
     { label: 'All', value: 'all' },
@@ -44,7 +42,7 @@ export default function ProjectTabs({ currentTab }) {
   ];
 
   return (
-    <div className={`border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
+    <div className={`border-b border-line`}>
       <div className="flex items-center">
         {tabs.map((tab) => (
           <Tab 
@@ -52,7 +50,6 @@ export default function ProjectTabs({ currentTab }) {
             label={tab.label} 
             value={tab.value} 
             active={currentTab === tab.value}
-            isDark={isDark}
           />
         ))}
       </div>

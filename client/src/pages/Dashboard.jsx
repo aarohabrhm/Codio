@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Loader2, FolderOpen } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 
 // Components
 import {
@@ -195,20 +194,19 @@ export default function Dashboard() {
     }
   };
 
-  const { isDark } = useTheme();
 
   // Loading state
   if (loading) {
     return (
-      <div className={`h-screen w-full flex flex-col items-center justify-center gap-4 ${isDark ? 'bg-[#0a0a0a] text-gray-400' : 'bg-gray-50 text-gray-600'}`}>
-        <Loader2 className="animate-spin w-8 h-8 text-blue-500" />
+      <div className={`h-screen w-full flex flex-col items-center justify-center gap-4 bg-surface-page text-dim`}>
+        <Loader2 className="animate-spin w-8 h-8 text-accent-fg" />
         <p>Loading your workspace...</p>
       </div>
     );
   }
 
   return (
-    <div className={`flex h-screen w-full overflow-hidden ${isDark ? 'bg-[#0a0a0a] text-gray-200' : 'bg-gray-50 text-gray-900'}`}>
+    <div className={`flex h-screen w-full overflow-hidden bg-surface-page text-primary`}>
       {/* Sidebar */}
       <DashboardSidebar 
         projects={projects} 
@@ -236,13 +234,13 @@ export default function Dashboard() {
             )}
 
             {/* Projects Section */}
-            <div className={`rounded-2xl overflow-hidden ${isDark ? 'bg-[#0f0f0f] border border-[#1a1a1a]' : 'bg-white border border-gray-200 shadow-sm'}`}>
+            <div className={`rounded-2xl overflow-hidden bg-surface-panel border border-line`}>
               {/* Section Header */}
-              <div className={`px-6 py-4 border-b ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
-                <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <div className={`px-6 py-4 border-b border-line`}>
+                <h2 className="font-display text-[22px] leading-[1.1] tracking-[-0.02em] text-primary [font-optical-sizing:auto]">
                   {view === 'projects' ? 'My Projects' : 'Your Projects'}
                 </h2>
-                <p className={`text-sm mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                <p className="mt-1 font-mono text-[11.5px] text-muted">
                   {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} found
                 </p>
               </div>
@@ -268,11 +266,11 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${isDark ? 'bg-[#1a1a1a]' : 'bg-gray-100'}`}>
-                      <FolderOpen size={32} className="text-gray-600" />
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-surface-raised`}>
+                      <FolderOpen size={32} className="text-dim" />
                     </div>
-                    <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>No projects found</h3>
-                    <p className={`max-w-sm mb-6 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                    <h3 className="font-display text-[20px] leading-[1.15] tracking-[-0.02em] mb-2 text-primary [font-optical-sizing:auto]">No projects found</h3>
+                    <p className={`max-w-sm mb-6 text-dim`}>
                       {searchValue 
                         ? `No projects match "${searchValue}". Try a different search term.`
                         : "You don't have any projects yet. Create your first project to get started."
@@ -281,7 +279,7 @@ export default function Dashboard() {
                     {!searchValue && (
                       <button
                         onClick={() => setIsModalOpen(true)}
-                        className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-sm font-medium"
+                        className="px-5 py-2.5 bg-accent text-accent-on rounded-xl hover:brightness-110 transition text-sm font-medium"
                       >
                         Create your first project
                       </button>
@@ -322,7 +320,7 @@ export default function Dashboard() {
       {/* Custom Scrollbar Styles */}
       <style>{`
         .overflow-y-auto::-webkit-scrollbar { width: 8px; height: 8px; }
-        .overflow-y-auto::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+        .overflow-y-auto::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
         .overflow-y-auto::-webkit-scrollbar-track { background: transparent; }
       `}</style>
     </div>

@@ -1,7 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { FileText, Search, GitBranch, BookOpen, User, Settings, LayoutDashboard } from "lucide-react";
 import codioLogo from "../../assets/logo.png";
-import { useTheme } from "../../context/ThemeContext";
 
 /**
  * Universal sidebar component for all pages
@@ -12,7 +11,6 @@ import { useTheme } from "../../context/ThemeContext";
 export default function Sidebar({ activeTab, onTabChange, isPanelVisible = true }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDark } = useTheme();
   
   const currentPath = location.pathname;
   const isEditorPage = currentPath.startsWith("/editor") || currentPath === "/";
@@ -22,8 +20,8 @@ export default function Sidebar({ activeTab, onTabChange, isPanelVisible = true 
   const iconButtonClass = (isActive) =>
     `w-10 h-10 rounded-lg flex items-center justify-center transition ${
       isActive
-        ? isDark ? "text-white bg-[#1a1a1a]" : "text-gray-900 bg-gray-200"
-        : isDark ? "text-gray-500 hover:text-gray-300 hover:bg-[#1a1a1a]" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+        ? "text-primary bg-surface-raised"
+        : "text-muted hover:text-primary hover:bg-surface-hover"
     }`;
 
   const handleEditorTabClick = (tab) => {
@@ -35,10 +33,10 @@ export default function Sidebar({ activeTab, onTabChange, isPanelVisible = true 
   };
 
   return (
-    <div className={`w-14 flex flex-col items-center py-3 border-r ${isDark ? 'bg-[#0a0a0a] border-[#1a1a1a]' : 'bg-gray-50 border-gray-200'}`}>
+    <div className={`w-14 flex flex-col items-center py-3 border-r bg-surface-page border-line`}>
       {/* Logo */}
-      <div className="w-10 h-10 mb-2 rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center">
-                      <img src={codioLogo} alt="Codio" className="w-6 h-6" />
+      <div className="w-10 h-10 mb-2 rounded-lg bg-gradient-to-br from-surface-raised to-surface-panel border border-line flex items-center justify-center">
+                      <img src={codioLogo} alt="Codio" className="w-6 h-6 object-contain dark:invert" />
                     </div>
 
       {/* Top Navigation icons */}

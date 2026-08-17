@@ -4,13 +4,11 @@ import {
   Palette, FolderGit2, Star, Clock, Users, Archive, ExternalLink
 } from 'lucide-react';
 import codioLogo from '../../assets/logo.png';
-import { useTheme } from '../../context/ThemeContext';
 
 const cn = (...args) => args.filter(Boolean).join(' ');
 
 export default function DashboardSidebar({ projects, currentTab, currentView, onViewChange }) {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
 
   const counts = {
     all: projects.length,
@@ -35,20 +33,20 @@ export default function DashboardSidebar({ projects, currentTab, currentView, on
         className={cn(
           'w-full flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition text-sm',
           active 
-            ? isDark ? 'bg-[#1a1a1a] text-white' : 'bg-gray-200 text-gray-900'
-            : isDark ? 'hover:bg-[#141414] text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+            ? 'bg-surface-raised text-primary'
+            : 'hover:bg-surface-hover text-dim hover:text-primary'
         )}
       >
         <div className="flex items-center gap-3">
-          {Icon && <Icon size={16} className={active ? 'text-blue-400' : 'text-gray-500'} />}
+          {Icon && <Icon size={16} className={active ? 'text-accent-fg' : 'text-muted'} />}
           {!Icon && <span className="w-4" />}
           <span>{label}</span>
         </div>
         <span className={cn(
           "text-xs px-2 py-0.5 rounded-full",
           active 
-            ? isDark ? "bg-[#2a2a2a] text-gray-300" : "bg-gray-300 text-gray-700"
-            : isDark ? "bg-[#1a1a1a] text-gray-500" : "bg-gray-100 text-gray-500"
+            ? "bg-surface-hover text-dim"
+            : "bg-surface-raised text-muted"
         )}>
           {count}
         </span>
@@ -62,11 +60,11 @@ export default function DashboardSidebar({ projects, currentTab, currentView, on
       className={cn(
         "flex items-center gap-3 px-3 py-2 rounded-lg transition text-sm",
         isActive 
-          ? isDark ? "bg-[#1a1a1a] text-white" : "bg-gray-200 text-gray-900"
-          : isDark ? "hover:bg-[#141414] text-gray-400 hover:text-gray-200" : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+          ? "bg-surface-raised text-primary"
+          : "hover:bg-surface-hover text-dim hover:text-primary"
       )}
     >
-      <Icon size={18} className={isActive ? "text-blue-400" : "text-gray-500"} />
+      <Icon size={18} className={isActive ? "text-accent-fg" : "text-muted"} />
       <span>{label}</span>
     </Link>
   );
@@ -76,16 +74,16 @@ export default function DashboardSidebar({ projects, currentTab, currentView, on
   };
 
   return (
-    <aside className={`w-64 border-r flex flex-col h-full ${isDark ? 'bg-[#0a0a0a] border-[#1a1a1a]' : 'bg-gray-50 border-gray-200'}`}>
+    <aside className={`w-64 border-r flex flex-col h-full bg-surface-page border-line`}>
       {/* Logo Header */}
-      <div className={`px-4 py-4 border-b h-20 flex items-center ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
+      <div className={`px-4 py-4 border-b h-20 flex items-center border-line`}>
         <Link to="/dashboard" className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 flex items-center justify-center">
-            <img src={codioLogo} alt="Codio" className="w-6 h-6" />
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-surface-raised to-surface-panel border border-line flex items-center justify-center">
+            <img src={codioLogo} alt="Codio" className="w-6 h-6 object-contain dark:invert" />
           </div>
           <div className="flex flex-col">
-            <span className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Codio</span>
-            <span className={`text-[10px] -mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Collaborative IDE</span>
+            <span className="font-display text-[19px] leading-none tracking-[-0.02em] text-primary [font-optical-sizing:auto]">Codio</span>
+            <span className="mt-1 font-mono text-[10px] uppercase tracking-[0.08em] text-muted">Collaborative IDE</span>
           </div>
         </Link>
       </div>
@@ -98,11 +96,11 @@ export default function DashboardSidebar({ projects, currentTab, currentView, on
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-sm text-left",
               currentView === 'dashboard'
-                ? isDark ? "bg-[#1a1a1a] text-white" : "bg-gray-200 text-gray-900"
-                : isDark ? "hover:bg-[#141414] text-gray-400 hover:text-gray-200" : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+                ? "bg-surface-raised text-primary"
+                : "hover:bg-surface-hover text-dim hover:text-primary"
             )}
           >
-            <Home size={18} className={currentView === 'dashboard' ? "text-blue-400" : "text-gray-500"} />
+            <Home size={18} className={currentView === 'dashboard' ? "text-accent-fg" : "text-muted"} />
             <span>Dashboard</span>
           </button>
           <button
@@ -110,11 +108,11 @@ export default function DashboardSidebar({ projects, currentTab, currentView, on
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-sm text-left",
               currentView === 'projects'
-                ? isDark ? "bg-[#1a1a1a] text-white" : "bg-gray-200 text-gray-900"
-                : isDark ? "hover:bg-[#141414] text-gray-400 hover:text-gray-200" : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+                ? "bg-surface-raised text-primary"
+                : "hover:bg-surface-hover text-dim hover:text-primary"
             )}
           >
-            <LayoutGrid size={18} className={currentView === 'projects' ? "text-blue-400" : "text-gray-500"} />
+            <LayoutGrid size={18} className={currentView === 'projects' ? "text-accent-fg" : "text-muted"} />
             <span>My Projects</span>
           </button>
         </nav>
@@ -122,8 +120,8 @@ export default function DashboardSidebar({ projects, currentTab, currentView, on
         {/* Folders Section */}
         <div className="mb-6">
           <div className="flex items-center gap-2 px-3 mb-3">
-            <Folder size={14} className="text-gray-500" />
-            <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">Folders</span>
+            <Folder size={14} className="text-muted" />
+            <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-muted">Folders</span>
           </div>
 
           <div className="space-y-0.5">
@@ -141,7 +139,7 @@ export default function DashboardSidebar({ projects, currentTab, currentView, on
       </div>
 
       {/* Bottom Navigation */}
-      <div className={`px-3 py-4 border-t ${isDark ? 'border-[#1a1a1a]' : 'border-gray-200'}`}>
+      <div className={`px-3 py-4 border-t border-line`}>
         <nav className="space-y-0.5">
           <NavLink to="/settings" icon={Settings} label="Settings" />
         </nav>
