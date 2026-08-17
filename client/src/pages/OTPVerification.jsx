@@ -87,13 +87,13 @@ export default function OTPVerification({ email, onVerified = () => {}, onBack =
       subtitle="Enter the 6-digit code we sent to your email"
     >
       {/* Email Display */}
-      <div className="flex items-center gap-3 bg-[#141414] border border-gray-800 rounded-xl p-4 mb-6">
-        <div className="p-3 rounded-full bg-[#0a0a0a]">
-          <Mail className="h-5 w-5 text-gray-400" />
+      <div className="flex items-center gap-3 bg-surface-panel border border-line rounded-surface p-4 mb-6">
+        <div className="p-3 rounded-full bg-surface-raised">
+          <Mail className="h-5 w-5 text-dim" />
         </div>
         <div>
-          <p className="text-sm text-gray-500">Code sent to</p>
-          <p className="text-white font-medium">{email}</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">Code sent to</p>
+          <p className="font-mono text-[13px] text-primary">{email}</p>
         </div>
       </div>
 
@@ -118,7 +118,7 @@ export default function OTPVerification({ email, onVerified = () => {}, onBack =
               setOtp(val);
               if (error) setError('');
             }}
-            className="w-full px-4 py-3.5 bg-[#141414] border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-700 transition-all text-center tracking-[0.5em] text-xl font-mono"
+            className="w-full px-4 py-3.5 bg-surface-panel border border-line-strong rounded-field text-primary placeholder-muted focus:outline-none focus:border-accent transition-all text-center tracking-[0.5em] text-xl font-mono"
             placeholder="● ● ● ● ● ●"
             required
           />
@@ -133,15 +133,15 @@ export default function OTPVerification({ email, onVerified = () => {}, onBack =
 
         {/* Resend Section */}
         <div className="text-center pt-2">
-          <p className="text-sm text-gray-500 mb-3">Didn't receive the code?</p>
+          <p className="font-mono text-[11.5px] text-muted mb-3">Didn't receive the code?</p>
           <button
             type="button"
             onClick={handleResend}
             disabled={!canResend || loading}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
               canResend && !loading 
-                ? 'bg-white/5 hover:bg-white/10 text-white border border-gray-700' 
-                : 'bg-transparent text-gray-600 cursor-not-allowed'
+                ? 'bg-surface-panel hover:bg-surface-hover text-primary border border-line-strong' 
+                : 'bg-transparent text-muted cursor-not-allowed'
             }`}
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />

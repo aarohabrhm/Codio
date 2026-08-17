@@ -141,12 +141,12 @@ export default function Login() {
     >
       {/* Toggle Link */}
       <div className="text-center mb-6">
-        <p className="text-gray-400">
+        <p className="text-dim">
           {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
           <button
             type="button"
             onClick={toggleMode}
-            className="text-white hover:text-cyan-400 font-medium underline underline-offset-2 transition-colors"
+            className="text-primary hover:text-accent-fg font-medium underline underline-offset-2 transition-colors"
           >
             {isLogin ? 'Sign up' : 'Sign in'}
           </button>
@@ -203,7 +203,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-gray-500 hover:text-gray-300 transition-colors"
+              className="text-muted hover:text-primary transition-colors"
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -213,19 +213,19 @@ export default function Login() {
         {/* Remember & Forgot */}
         {isLogin && (
           <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center text-gray-400 cursor-pointer">
+            <label className="flex items-center text-dim cursor-pointer">
               <input 
                 type="checkbox" 
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="mr-2 w-4 h-4 rounded bg-[#141414] border-gray-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0" 
+                className="mr-2 w-4 h-4 rounded bg-surface-panel border-line-strong text-accent focus:ring-accent focus:ring-offset-0" 
               />
               Remember me
             </label>
             <button 
               type="button"
               onClick={() => navigate("/forgot-password")} 
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-dim hover:text-primary transition-colors"
             >
               Forgot password?
             </button>
