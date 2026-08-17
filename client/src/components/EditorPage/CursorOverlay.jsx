@@ -66,7 +66,7 @@ export default function CursorOverlay({ userCursors, userSelections, activeFileI
           
           {/* Username label */}
           <div
-            className="absolute -top-6 left-0 text-[10px] text-white px-2 py-0.5 rounded whitespace-nowrap shadow-lg font-medium"
+            className="absolute -top-6 left-0 text-[10px] text-accent-on px-2 py-0.5 rounded whitespace-nowrap shadow-lg font-medium"
             style={{ backgroundColor: pos.color }}
           >
             {pos.username}

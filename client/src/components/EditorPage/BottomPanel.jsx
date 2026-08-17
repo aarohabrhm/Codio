@@ -145,19 +145,15 @@ const BottomPanel = forwardRef(function BottomPanel({
   };
 
   return (
-    <div className={`border-t flex flex-col h-64 ${
-      isDark ? "bg-[#0a0a0a] border-[#1a1a1a]" : "bg-gray-50 border-gray-200"
-    }`}>
-      <div className={`flex items-center justify-between px-4 border-b ${
-        isDark ? "border-[#1a1a1a] bg-[#0f0f0f]" : "border-gray-200 bg-white"
-      }`}>
+    <div className={`border-t flex flex-col h-64 bg-surface-page border-line`}>
+      <div className={`flex items-center justify-between px-4 border-b border-line bg-surface-panel`}>
         <div className="flex items-center gap-6">
           <button
             onClick={() => setActiveTab("terminal")}
             className={`text-xs tracking-wide py-2.5 border-b-2 transition-colors ${
               activeTab === "terminal"
-                ? `${isDark ? "text-white" : "text-gray-900"} border-blue-500`
-                : `${isDark ? "text-gray-500 hover:text-gray-300" : "text-gray-500 hover:text-gray-700"} border-transparent`
+                ? `text-primary border-accent`
+                : `text-muted hover:text-primary border-transparent`
             }`}
           >
             TERMINAL
@@ -166,13 +162,13 @@ const BottomPanel = forwardRef(function BottomPanel({
             onClick={() => setActiveTab("problems")}
             className={`text-xs tracking-wide py-2.5 border-b-2 transition-colors flex items-center gap-2 ${
               activeTab === "problems"
-                ? `${isDark ? "text-white" : "text-gray-900"} border-blue-500`
-                : `${isDark ? "text-gray-500 hover:text-gray-300" : "text-gray-500 hover:text-gray-700"} border-transparent`
+                ? `text-primary border-accent`
+                : `text-muted hover:text-primary border-transparent`
             }`}
           >
             PROBLEMS
             {problems.length > 0 && (
-              <span className="bg-red-500/20 text-red-400 text-[10px] px-1.5 rounded-full">
+              <span className="bg-danger/20 text-danger text-[10px] px-1.5 rounded-full">
                 {problems.length}
               </span>
             )}
@@ -184,7 +180,7 @@ const BottomPanel = forwardRef(function BottomPanel({
             <button
               onClick={handleKill}
               title="Stop"
-              className="flex items-center gap-1 px-2 py-1 text-xs text-red-400 hover:text-red-300 rounded"
+              className="flex items-center gap-1 px-2 py-1 text-xs text-danger hover:text-danger rounded"
             >
               <Square size={12} /> Stop
             </button>
@@ -192,11 +188,7 @@ const BottomPanel = forwardRef(function BottomPanel({
           <button
             onClick={handleClear}
             title="Clear"
-            className={`p-1.5 rounded transition-colors ${
-              isDark
-                ? "text-gray-500 hover:text-white hover:bg-[#1a1a1a]"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-            }`}
+            className={`p-1.5 rounded transition-colors text-muted hover:text-primary hover:bg-surface-raised`}
           >
             <RefreshCw size={14} />
           </button>
@@ -213,21 +205,19 @@ const BottomPanel = forwardRef(function BottomPanel({
         {activeTab === "problems" && (
           <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-4">
             {problems.length === 0 ? (
-              <div className={`flex flex-col items-center justify-center h-full gap-2 ${isDark ? "text-gray-500" : "text-gray-500"}`}>
-                <div className="text-green-500/20"><AlertCircle size={40} /></div>
+              <div className={`flex flex-col items-center justify-center h-full gap-2 text-muted`}>
+                <div className="text-ok/20"><AlertCircle size={40} /></div>
                 <p>No problems detected.</p>
               </div>
             ) : (
               problems.map((p, idx) => (
-                <div key={idx} className={`flex gap-3 p-3 border border-red-500/20 rounded-md mb-2 cursor-pointer group ${
-                  isDark ? "bg-[#1a1a1a]/50 hover:bg-[#1a1a1a]" : "bg-red-50/50 hover:bg-red-50"
-                }`}>
-                  <XCircle className="text-red-500 mt-0.5 shrink-0" size={16} />
+                <div key={idx} className={`flex gap-3 p-3 border border-danger/20 rounded-md mb-2 cursor-pointer group bg-surface-raised/50 hover:bg-surface-raised`}>
+                  <XCircle className="text-danger mt-0.5 shrink-0" size={16} />
                   <div>
-                    <div className={`font-medium text-sm ${isDark ? "text-gray-200" : "text-gray-800"}`}>
+                    <div className={`font-medium text-sm text-primary`}>
                       {p.message}
                     </div>
-                    <div className={`text-xs mt-1 ${isDark ? "text-gray-500 group-hover:text-gray-400" : "text-gray-500 group-hover:text-gray-600"}`}>
+                    <div className={`text-xs mt-1 text-muted group-hover:text-dim`}>
                       {files?.[p.file]?.name || "Unknown File"} • Line {p.line}
                     </div>
                   </div>

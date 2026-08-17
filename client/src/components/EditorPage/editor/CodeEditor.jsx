@@ -203,7 +203,7 @@ const CodeEditor = forwardRef(
 
     if (!file) {
       return (
-        <div className={`h-full w-full flex items-center justify-center text-sm ${isDark ? "text-gray-500" : "text-gray-500"}`}>
+        <div className={`h-full w-full flex items-center justify-center text-sm text-muted`}>
           Select a file to start editing
         </div>
       );
