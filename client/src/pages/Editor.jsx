@@ -15,7 +15,6 @@ import CursorOverlay from "../components/EditorPage/CursorOverlay";
 // Hooks
 import { useFileManager } from "../components/EditorPage/hooks";
 import { useCollaboration } from "../components/EditorPage/hooks/useCollaboration";
-import { useTheme } from "../context/ThemeContext";
 
 const EMPTY_PROJECT_FILES = {
   root: {
@@ -59,7 +58,6 @@ export default function Editor() {
   const { projectId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const { isDark } = useTheme();
 
   // --- Checkpoint State ---
   const [checkpoints, setCheckpoints] = useState([]);
@@ -678,10 +676,8 @@ useEffect(() => {
 
   if (isLoading) {
     return (
-      <div className={`h-screen w-full flex flex-col items-center justify-center gap-4 ${
-        isDark ? 'bg-[#0a0a0a] text-gray-400' : 'bg-gray-50 text-gray-500'
-      }`}>
-        <Loader2 className="animate-spin w-8 h-8 text-blue-500" />
+      <div className={`h-screen w-full flex flex-col items-center justify-center gap-4 bg-surface-page text-dim`}>
+        <Loader2 className="animate-spin w-8 h-8 text-accent-fg" />
         <p>Loading project environment...</p>
       </div>
     );
@@ -697,7 +693,7 @@ useEffect(() => {
   };
 
   return (
-    <div className={`flex h-screen w-full ${isDark ? 'bg-[#0a0a0a] text-gray-200' : 'bg-gray-50 text-gray-800'}`}>
+    <div className={`flex h-screen w-full bg-surface-page text-primary`}>
       <Sidebar 
         activeTab={activeLeftTab} 
         onTabChange={handleTabChange}
@@ -729,21 +725,17 @@ useEffect(() => {
       )}
 
       <main className="flex-1 flex flex-col min-w-0">
-        <div className={`h-10 border-b flex items-center justify-between px-4 ${
-          isDark 
-            ? 'bg-[#0a0a0a] border-[#1a1a1a]' 
-            : 'bg-white border-gray-200'
-        }`}>
+        <div className={`h-10 border-b flex items-center justify-between px-4 bg-surface-page border-line`}>
           <div className="flex items-center gap-4">
-            <div className={`text-xs flex items-center gap-2 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+            <div className={`text-xs flex items-center gap-2 text-muted`}>
               {isSaving ? (
-                <span className="text-blue-400 flex items-center gap-1">
+                <span className="text-accent-fg flex items-center gap-1">
                   <Loader2 size={10} className="animate-spin"/> Saving...
                 </span>
               ) : "Ready"}
             </div>
 
-            <div className={`w-px h-5 ${isDark ? 'bg-[#2a2a2a]' : 'bg-gray-200'}`} />
+            <div className={`w-px h-5 bg-surface-hover`} />
 
             <OnlineUsers 
               onlineUsers={onlineUsers}
@@ -755,23 +747,23 @@ useEffect(() => {
           <div className="flex items-center gap-1">
             <button 
               onClick={handleUndo} 
-              className={`p-1.5 rounded ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`p-1.5 rounded text-dim hover:text-primary`}
               title="Undo (Ctrl+Z)"
             >
               <Undo2 size={16}/>
             </button>
             <button 
               onClick={handleRedo} 
-              className={`p-1.5 rounded ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`p-1.5 rounded text-dim hover:text-primary`}
               title="Redo (Ctrl+Y)"
             >
               <Redo2 size={16}/>
             </button>
-            <div className={`w-px h-5 mx-2 ${isDark ? 'bg-[#2a2a2a]' : 'bg-gray-200'}`} />
+            <div className={`w-px h-5 mx-2 bg-surface-hover`} />
             <button 
               onClick={() => bottomPanelRef.current?.handleRun()} 
               disabled={!activeFile} 
-              className="px-3 py-1 text-xs text-white bg-emerald-600 rounded flex items-center gap-1.5 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 text-xs text-accent-on bg-ok rounded flex items-center gap-1.5 hover:bg-ok disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Play size={12}/> Run
             </button>
@@ -781,15 +773,11 @@ useEffect(() => {
             {!chatOpen && (
               <button 
                 onClick={() => setChatOpen(true)} 
-                className={`relative px-3 py-1.5 text-xs rounded-lg flex gap-2 ${
-                  isDark 
-                    ? 'bg-[#1a1a1a] hover:bg-[#2a2a2a]' 
-                    : 'bg-gray-100 hover:bg-gray-200'
-                }`}
+                className={`relative px-3 py-1.5 text-xs rounded-lg flex gap-2 bg-surface-raised hover:bg-surface-hover`}
               >
                 <MessageCircle size={14}/> Chat
                 {unseenCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-semibold rounded-full flex items-center justify-center animate-pulse">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-danger text-accent-on text-[10px] font-semibold rounded-full flex items-center justify-center animate-pulse">
                     {unseenCount > 9 ? "9+" : unseenCount}
                   </span>
                 )}
@@ -798,7 +786,7 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className={`border-b ${isDark ? 'bg-[#0f0f0f] border-[#1a1a1a]' : 'bg-gray-100 border-gray-200'}`}>
+        <div className={`border-b bg-surface-panel border-line`}>
           <div className="flex items-center">
             {openFiles.map((id) => {
               const file = files[id];
@@ -807,21 +795,17 @@ useEffect(() => {
                 <div 
                   key={id} 
                   onClick={() => setActiveFileId(id)} 
-                  className={`group flex items-center gap-2 px-4 py-2 cursor-pointer border-r ${
-                    isDark ? 'border-[#1a1a1a]' : 'border-gray-200'
-                  } ${
+                  className={`group flex items-center gap-2 px-4 py-2 cursor-pointer border-r border-line ${
                     activeFileId === id 
-                      ? `${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-white text-gray-900'}` 
-                      : `${isDark ? 'bg-[#0f0f0f] text-gray-500 hover:bg-[#1a1a1a]' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`
+                      ? `bg-surface-page text-primary` 
+                      : `bg-surface-panel text-muted hover:bg-surface-raised`
                   }`}
                 >
-                  {isModified && <span className="w-2 h-2 rounded-full bg-yellow-400" />}
+                  {isModified && <span className="w-2 h-2 rounded-full bg-accent-fg" />}
                   <span className="text-sm">{file?.name}</span>
                   <button 
                     onClick={(e) => handleCloseTab(e, id)} 
-                    className={`opacity-0 group-hover:opacity-100 p-0.5 rounded ${
-                      isDark ? 'hover:bg-[#2a2a2a]' : 'hover:bg-gray-300'
-                    }`}
+                    className={`opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-surface-hover`}
                   >
                     <X size={12} />
                   </button>
@@ -832,7 +816,7 @@ useEffect(() => {
         </div>
 
         <div className="flex-1 flex overflow-hidden relative">
-          <div className={`flex-1 relative ${isDark ? 'bg-[#0a0a0a]' : 'bg-white'}`}>
+          <div className={`flex-1 relative bg-surface-page`}>
             <CodeEditor
               ref={editorRef}
               file={activeFile}
@@ -885,9 +869,9 @@ useEffect(() => {
       
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: ${isDark ? '#2a2a2a' : '#d1d5db'}; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        ::selection { background: rgba(34, 211, 238, 0.2); }
+        ::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
       `}</style>
     </div>
   );

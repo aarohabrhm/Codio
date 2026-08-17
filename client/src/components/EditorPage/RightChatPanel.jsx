@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Send, Sparkles, Smile, Copy, Check } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
-import { useTheme } from "../../context/ThemeContext";
 import axios from "axios";
+import { useTheme } from "../../context/ThemeContext";
 
 const MODELS = [
   { label: "GPT-4o",            value: "gpt-4o",            provider: "openai" },
@@ -17,9 +17,9 @@ const MODELS = [
 ];
 
 const PROVIDER_COLORS = {
-  openai:    "text-green-400",
-  anthropic: "text-orange-400",
-  gemini:    "text-blue-400",
+  openai:    "text-ok",
+  anthropic: "text-danger",
+  gemini:    "text-accent-fg",
 };
 
 function extractCodeBlocks(text) {
@@ -46,7 +46,6 @@ function extractCodeBlocks(text) {
 function CodeBlock({ language, content, onApply }) {
   const [copied, setCopied] = useState(false);
   const [applied, setApplied] = useState(false);
-  const { isDark } = useTheme();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -61,15 +60,15 @@ function CodeBlock({ language, content, onApply }) {
   };
 
   return (
-    <div className={`rounded-lg overflow-hidden my-2 border ${isDark ? "border-[#2a2a2a]" : "border-gray-200"}`}>
-      <div className={`flex items-center justify-between px-3 py-1.5 ${isDark ? "bg-[#1a1a1a]" : "bg-gray-100"}`}>
-        <span className="text-xs text-gray-400 font-mono">{language}</span>
+    <div className={`rounded-lg overflow-hidden my-2 border border-line-strong`}>
+      <div className={`flex items-center justify-between px-3 py-1.5 bg-surface-raised`}>
+        <span className="text-xs text-dim font-mono">{language}</span>
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
-            className={`text-xs flex items-center gap-1 transition-colors ${isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-700"}`}
+            className={`text-xs flex items-center gap-1 transition-colors text-dim hover:text-primary`}
           >
-            {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+            {copied ? <Check size={12} className="text-ok" /> : <Copy size={12} />}
             {copied ? "Copied" : "Copy"}
           </button>
           {onApply && (
@@ -77,8 +76,8 @@ function CodeBlock({ language, content, onApply }) {
               onClick={handleApply}
               className={`text-xs px-2 py-0.5 rounded transition-colors ${
                 applied
-                  ? "bg-green-600 text-white"
-                  : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                  ? "bg-ok text-accent-on"
+                  : "bg-ok hover:bg-ok text-accent-on"
               }`}
             >
               {applied ? "✓ Applied" : "Apply"}
@@ -86,14 +85,14 @@ function CodeBlock({ language, content, onApply }) {
           )}
         </div>
       </div>
-      <pre className={`p-3 text-xs font-mono overflow-x-auto ${isDark ? "bg-[#0f0f0f] text-gray-300" : "bg-gray-50 text-gray-800"}`}>
+      <pre className={`p-3 text-xs font-mono overflow-x-auto bg-surface-panel text-dim`}>
         <code>{content}</code>
       </pre>
     </div>
   );
 }
 
-function MessageBubble({ message, isMine, chatMode, myUserId, isDark, onApply }) {
+function MessageBubble({ message, isMine, chatMode, myUserId, onApply }) {
   const formatTime = (date) =>
     new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -101,8 +100,8 @@ function MessageBubble({ message, isMine, chatMode, myUserId, isDark, onApply })
     const parts = extractCodeBlocks(message.content || message.text || "");
     return (
       <div className="flex items-start gap-2 justify-start">
-        <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isDark ? "bg-[#1a1a1a]" : "bg-gray-100"}`}>
-          <Sparkles size={14} className="text-cyan-400" />
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-surface-raised`}>
+          <Sparkles size={14} className="text-accent-fg" />
         </div>
         <div className="max-w-[85%]">
           {parts.map((part, i) =>
@@ -114,13 +113,13 @@ function MessageBubble({ message, isMine, chatMode, myUserId, isDark, onApply })
                 onApply={onApply}
               />
             ) : (
-              <p key={i} className={`text-sm whitespace-pre-wrap leading-relaxed ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+              <p key={i} className={`text-sm whitespace-pre-wrap leading-relaxed text-dim`}>
                 {part.content}
               </p>
             )
           )}
           {message.createdAt && (
-            <span className="text-[10px] text-gray-500 mt-1 block">
+            <span className="text-[10px] text-muted mt-1 block">
               {formatTime(message.createdAt)}
             </span>
           )}
@@ -140,27 +139,27 @@ function MessageBubble({ message, isMine, chatMode, myUserId, isDark, onApply })
             className="w-7 h-7 rounded-full object-cover"
           />
           {isUnseen && (
-            <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 ${isDark ? "border-[#0a0a0a]" : "border-white"}`} />
+            <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-danger rounded-full border-2 border-surface-page`} />
           )}
         </div>
       )}
       <div className={`max-w-[75%] px-3 py-2 text-sm whitespace-pre-wrap ${
         isMine
-          ? "bg-emerald-600 text-white rounded-2xl rounded-br-sm"
+          ? "bg-ok text-accent-on rounded-2xl rounded-br-sm"
           : isUnseen
-          ? "bg-blue-600/30 text-gray-100 rounded-2xl rounded-bl-sm border border-blue-500/50"
-          : `${isDark ? "bg-[#1a1a1a] text-gray-200" : "bg-gray-100 text-gray-800"} rounded-2xl rounded-bl-sm`
+          ? "bg-accent/30 text-primary rounded-2xl rounded-bl-sm border border-accent/50"
+          : `bg-surface-raised text-primary rounded-2xl rounded-bl-sm`
       }`}>
         {!isMine && chatMode === "team" && (
-          <div className="text-[11px] text-emerald-400 mb-0.5">{message.senderUsername}</div>
+          <div className="font-mono text-[11px] text-ok mb-0.5">{message.senderUsername}</div>
         )}
         <div className="flex items-end gap-1 flex-wrap">
           <span>{message.text || message.content}</span>
           {message.createdAt && (
-            <span className="text-[10px] text-gray-300 ml-2">{formatTime(message.createdAt)}</span>
+            <span className="font-mono text-[10px] text-dim ml-2">{formatTime(message.createdAt)}</span>
           )}
           {isMine && chatMode === "team" && (
-            <span className={`text-[11px] ml-1 ${(message.seenBy?.length || 0) > 1 ? "text-blue-400" : "text-gray-400"}`}>
+            <span className={`text-[11px] ml-1 ${(message.seenBy?.length || 0) > 1 ? "text-accent-fg" : "text-dim"}`}>
               {(message.seenBy?.length || 0) > 1 ? "✓✓" : "✓"}
             </span>
           )}
@@ -188,6 +187,8 @@ export default function RightChatPanel({
   activeFile,
   editorRef,
 }) {
+  // still needed: EmojiPicker takes a light/dark theme string, not classes
+  const { isDark } = useTheme();
   const [showEmoji, setShowEmoji] = useState(false);
   const [selectedModel, setSelectedModel] = useState(MODELS[0].value);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -195,7 +196,6 @@ export default function RightChatPanel({
   const messagesEndRef = useRef(null);
   const emojiPickerRef = useRef(null);
   const emojiButtonRef = useRef(null);
-  const { isDark } = useTheme();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -296,25 +296,25 @@ export default function RightChatPanel({
   if (!isOpen) return null;
 
   return (
-    <div className={`w-96 border-l flex flex-col h-full relative ${isDark ? "bg-[#0a0a0a] border-[#1a1a1a]" : "bg-white border-gray-200"}`}>
+    <div className={`w-96 border-l flex flex-col h-full relative bg-surface-page border-line`}>
 
       {/* Header */}
-      <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? "border-[#1a1a1a]" : "border-gray-200"}`}>
-        <span className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+      <div className={`flex items-center justify-between px-4 py-3 border-b border-line`}>
+        <span className={`text-sm font-medium text-primary`}>
           {chatMode === "ai" ? "AI Assistant" : "Team Chat"}
         </span>
         <div className="flex items-center gap-2">
           {chatMode === "ai" && aiMessages.length > 0 && (
             <button
               onClick={() => setAiMessages([])}
-              className={`text-xs px-2 py-1 rounded ${isDark ? "text-gray-400 hover:bg-[#1a1a1a]" : "text-gray-500 hover:bg-gray-100"}`}
+              className={`text-xs px-2 py-1 rounded text-dim hover:bg-surface-raised`}
             >
               Clear
             </button>
           )}
           <button
             onClick={onToggle}
-            className={`p-1.5 rounded ${isDark ? "hover:bg-[#1a1a1a] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+            className={`p-1.5 rounded hover:bg-surface-raised text-dim`}
           >
             <X size={16} />
           </button>
@@ -322,14 +322,14 @@ export default function RightChatPanel({
       </div>
 
       {/* Mode Toggle */}
-      <div className={`px-4 py-3 border-b ${isDark ? "border-[#1a1a1a]" : "border-gray-200"}`}>
-        <div className={`flex gap-1 rounded-lg p-1 ${isDark ? "bg-[#0f0f0f]" : "bg-gray-100"}`}>
+      <div className={`px-4 py-3 border-b border-line`}>
+        <div className={`flex gap-1 rounded-lg p-1 bg-surface-panel`}>
           <button
             onClick={() => setChatMode("ai")}
             className={`flex-1 px-3 py-1 text-xs rounded-md transition ${
               chatMode === "ai"
-                ? "bg-cyan-500/20 text-cyan-400"
-                : `${isDark ? "text-gray-500 hover:text-white" : "text-gray-500 hover:text-gray-700"}`
+                ? "bg-accent/20 text-accent-fg"
+                : `text-muted hover:text-primary`
             }`}
           >
             AI
@@ -338,13 +338,13 @@ export default function RightChatPanel({
             onClick={() => setChatMode("team")}
             className={`relative flex-1 px-3 py-1 text-xs rounded-md transition ${
               chatMode === "team"
-                ? "bg-emerald-500/20 text-emerald-400"
-                : `${isDark ? "text-gray-500 hover:text-white" : "text-gray-500 hover:text-gray-700"}`
+                ? "bg-ok/20 text-ok"
+                : `text-muted hover:text-primary`
             }`}
           >
             Team
             {chatMode !== "team" && unseenCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-semibold rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-danger text-accent-on text-[9px] font-semibold rounded-full flex items-center justify-center">
                 {unseenCount > 9 ? "9+" : unseenCount}
               </span>
             )}
@@ -354,10 +354,10 @@ export default function RightChatPanel({
 
       {/* Active file indicator */}
       {chatMode === "ai" && activeFile && (
-        <div className={`px-4 py-2 border-b flex items-center gap-2 ${isDark ? "border-[#1a1a1a] bg-[#0f0f0f]" : "border-gray-200 bg-gray-50"}`}>
-          <span className="w-2 h-2 rounded-full bg-cyan-400 shrink-0" />
-          <span className={`text-xs truncate ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-            Context: <span className={isDark ? "text-gray-200" : "text-gray-700"}>{activeFile.name}</span>
+        <div className={`px-4 py-2 border-b flex items-center gap-2 border-line bg-surface-panel`}>
+          <span className="w-2 h-2 rounded-full bg-accent shrink-0" />
+          <span className={`text-xs truncate text-dim`}>
+            Context: <span className={"text-primary"}>{activeFile.name}</span>
           </span>
         </div>
       )}
@@ -366,13 +366,13 @@ export default function RightChatPanel({
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 custom-scrollbar">
         {displayMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center mb-4">
-              <Sparkles size={24} className="text-white" />
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-surface-raised to-surface-hover flex items-center justify-center mb-4">
+              <Sparkles size={24} className="text-accent-on" />
             </div>
-            <div className={`text-lg font-medium mb-2 ${isDark ? "text-white" : "text-gray-900"}`}>
+            <div className={`text-lg font-medium mb-2 text-primary`}>
               {chatMode === "ai" ? "How can I help?" : "No messages yet"}
             </div>
-            <div className={`text-sm ${isDark ? "text-gray-500" : "text-gray-500"}`}>
+            <div className={`text-sm text-muted`}>
               {chatMode === "ai"
                 ? activeFile
                   ? `I can see ${activeFile.name} — ask me anything about it`
@@ -392,7 +392,6 @@ export default function RightChatPanel({
                 isMine={isMine}
                 chatMode={chatMode}
                 myUserId={myUserId}
-                isDark={isDark}
                 onApply={handleApplyCode}
               />
             );
@@ -401,10 +400,10 @@ export default function RightChatPanel({
 
         {isAiLoading && (
           <div className="flex items-start gap-2">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isDark ? "bg-[#1a1a1a]" : "bg-gray-100"}`}>
-              <Sparkles size={14} className="text-cyan-400 animate-pulse" />
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-surface-raised`}>
+              <Sparkles size={14} className="text-accent-fg animate-pulse" />
             </div>
-            <div className={`px-3 py-2 rounded-2xl rounded-bl-sm text-sm ${isDark ? "bg-[#1a1a1a] text-gray-400" : "bg-gray-100 text-gray-500"}`}>
+            <div className={`px-3 py-2 rounded-2xl rounded-bl-sm text-sm bg-surface-raised text-dim`}>
               <span className="inline-flex gap-1">
                 <span className="animate-bounce" style={{ animationDelay: "0ms" }}>•</span>
                 <span className="animate-bounce" style={{ animationDelay: "150ms" }}>•</span>
@@ -415,7 +414,7 @@ export default function RightChatPanel({
         )}
 
         {typingUsers.length > 0 && chatMode === "team" && (
-          <div className={`text-xs italic ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+          <div className={`text-xs italic text-dim`}>
             {typingUsers[0]} is typing…
           </div>
         )}
@@ -438,8 +437,8 @@ export default function RightChatPanel({
       )}
 
       {/* Input */}
-      <div className={`border-t p-4 ${isDark ? "border-[#1a1a1a]" : "border-gray-200"}`}>
-        <div className={`rounded-xl border overflow-hidden ${isDark ? "bg-[#0f0f0f] border-[#1a1a1a]" : "bg-gray-50 border-gray-200"}`}>
+      <div className={`border-t p-4 border-line`}>
+        <div className={`rounded-xl border overflow-hidden bg-surface-panel border-line`}>
           <div className="px-4 py-3">
             <textarea
               value={chatInput}
@@ -448,7 +447,7 @@ export default function RightChatPanel({
                 if (chatMode === "team") onTyping();
               }}
               placeholder={chatMode === "ai" ? "Ask about your code..." : "Message your team..."}
-              className={`w-full bg-transparent text-sm focus:outline-none resize-none ${isDark ? "text-gray-300 placeholder:text-gray-600" : "text-gray-700 placeholder:text-gray-400"}`}
+              className={`w-full bg-transparent text-sm focus:outline-none resize-none text-dim placeholder:text-muted`}
               rows={2}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -459,14 +458,14 @@ export default function RightChatPanel({
             />
           </div>
 
-          <div className={`px-4 py-2 border-t flex items-center justify-between ${isDark ? "border-[#1a1a1a]" : "border-gray-200"}`}>
+          <div className={`px-4 py-2 border-t flex items-center justify-between border-line`}>
             <div className="flex items-center gap-2">
               {chatMode === "ai" && (
                 <>
                   <select
                     value={selectedModel}
                     onChange={(e) => setSelectedModel(e.target.value)}
-                    className={`text-xs rounded px-1.5 py-1 focus:outline-none ${isDark ? "bg-[#1a1a1a] text-gray-300 border border-[#2a2a2a]" : "bg-white text-gray-600 border border-gray-200"}`}
+                    className={`text-xs rounded px-1.5 py-1 focus:outline-none bg-surface-raised text-dim border border-line-strong`}
                   >
                     {MODELS.map(m => (
                       <option key={m.value} value={m.value}>{m.label}</option>
@@ -487,10 +486,8 @@ export default function RightChatPanel({
                 onClick={() => setShowEmoji(prev => !prev)}
                 className={`p-1.5 rounded transition-colors ${
                   showEmoji
-                    ? "text-cyan-400 bg-cyan-400/10"
-                    : isDark
-                    ? "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+                    ? "text-accent-fg bg-accent/10"
+                    : "text-dim hover:text-primary hover:bg-surface-raised"
                 }`}
               >
                 <Smile size={16} />
@@ -498,7 +495,7 @@ export default function RightChatPanel({
               <button
                 onClick={handleSend}
                 disabled={isAiLoading}
-                className="p-1.5 text-cyan-400 hover:text-cyan-300 rounded disabled:opacity-50"
+                className="p-1.5 text-accent-fg hover:text-accent-fg rounded disabled:opacity-50"
               >
                 <Send size={14} />
               </button>
@@ -510,7 +507,7 @@ export default function RightChatPanel({
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: ${isDark ? "#2a2a2a" : "#d1d5db"}; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
       `}</style>
     </div>
   );

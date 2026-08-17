@@ -83,12 +83,12 @@ export default function ResetPassword() {
     >
       {/* Toggle Link */}
       <div className="text-center mb-6">
-        <p className="text-gray-400">
+        <p className="text-dim">
           Link expired?{" "}
           <button
             type="button"
             onClick={() => navigate('/forgot-password')}
-            className="text-white hover:text-cyan-400 font-medium underline underline-offset-2 transition-colors"
+            className="text-primary hover:text-accent-fg font-medium underline underline-offset-2 transition-colors"
           >
             Request a new one
           </button>
@@ -115,7 +115,7 @@ export default function ResetPassword() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-gray-500 hover:text-gray-300 transition-colors"
+              className="text-muted hover:text-primary transition-colors"
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -134,7 +134,7 @@ export default function ResetPassword() {
             <button
               type="button"
               onClick={() => setShowConfirm(!showConfirm)}
-              className="text-gray-500 hover:text-gray-300 transition-colors"
+              className="text-muted hover:text-primary transition-colors"
             >
               {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>

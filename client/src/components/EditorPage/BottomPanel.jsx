@@ -5,6 +5,59 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 
+// All sixteen ANSI slots, tuned to the terminal surface. The eight bright
+// slots used to be unset even though the app emits \x1b[90m, so bright-black
+// fell through to an xterm default that didn't match either theme.
+function terminalTheme(isDark) {
+  return isDark
+    ? {
+        background: "#0c0f0c",
+        foreground: "#c9cfc9",
+        cursor: "#8fa7f5",
+        cursorAccent: "#0c0f0c",
+        selectionBackground: "#2b4bf055",
+        black: "#0c0f0c",
+        red: "#e2716a",
+        green: "#5e9e6e",
+        yellow: "#e9a227",
+        blue: "#8fa7f5",
+        magenta: "#d2506c",
+        cyan: "#7fb3ae",
+        white: "#c9cfc9",
+        brightBlack: "#5e665e",
+        brightRed: "#ef8a83",
+        brightGreen: "#77b586",
+        brightYellow: "#f2b950",
+        brightBlue: "#a9bcf8",
+        brightMagenta: "#e07a90",
+        brightCyan: "#9ac7c2",
+        brightWhite: "#efefea",
+      }
+    : {
+        background: "#efefea",
+        foreground: "#171a17",
+        cursor: "#2b4bf0",
+        cursorAccent: "#efefea",
+        selectionBackground: "#2b4bf033",
+        black: "#171a17",
+        red: "#a63a33",
+        green: "#2f6b45",
+        yellow: "#8a6014",
+        blue: "#2b4bf0",
+        magenta: "#9c3350",
+        cyan: "#2f6b6b",
+        white: "#5b615a",
+        brightBlack: "#8a8f88",
+        brightRed: "#c04a42",
+        brightGreen: "#3f7f55",
+        brightYellow: "#a5761c",
+        brightBlue: "#4a66f3",
+        brightMagenta: "#b84663",
+        brightCyan: "#3f8585",
+        brightWhite: "#171a17",
+      };
+}
+
 const BottomPanel = forwardRef(function BottomPanel({
   activeTab,
   setActiveTab,
@@ -37,20 +90,11 @@ const BottomPanel = forwardRef(function BottomPanel({
     const term = new Terminal({
       cursorBlink: true,
       fontSize: 13,
-      fontFamily: '"Cascadia Code", "Fira Code", monospace',
-      theme: {
-        background: isDark ? "#0a0a0a" : "#ffffff",
-        foreground: isDark ? "#d4d4d4" : "#1a1a1a",
-        cursor:     isDark ? "#ffffff" : "#000000",
-        black:      "#000000",
-        red:        "#cd3131",
-        green:      "#0dbc79",
-        yellow:     "#e5e510",
-        blue:       "#2472c8",
-        magenta:    "#bc3fbc",
-        cyan:       "#11a8cd",
-        white:      "#e5e5e5",
-      },
+      // Cascadia and Fira were never loaded, so this silently rendered in a
+      // generic monospace. JetBrains Mono is the one the app actually ships.
+      fontFamily: '"JetBrains Mono", ui-monospace, "SFMono-Regular", monospace',
+      lineHeight: 1.4,
+      theme: terminalTheme(isDark),
       allowTransparency: true,
       convertEol: true,
     });
@@ -81,11 +125,9 @@ const BottomPanel = forwardRef(function BottomPanel({
 
   useEffect(() => {
     if (!xtermRef.current) return;
-    xtermRef.current.options.theme = {
-      background: isDark ? "#0a0a0a" : "#ffffff",
-      foreground: isDark ? "#d4d4d4" : "#1a1a1a",
-      cursor:     isDark ? "#ffffff" : "#000000",
-    };
+    // Assigning the whole object matters: patching only three keys used to
+    // drop the entire ANSI palette on the first light/dark toggle.
+    xtermRef.current.options.theme = terminalTheme(isDark);
   }, [isDark]);
 
   useEffect(() => {
@@ -145,19 +187,15 @@ const BottomPanel = forwardRef(function BottomPanel({
   };
 
   return (
-    <div className={`border-t flex flex-col h-64 ${
-      isDark ? "bg-[#0a0a0a] border-[#1a1a1a]" : "bg-gray-50 border-gray-200"
-    }`}>
-      <div className={`flex items-center justify-between px-4 border-b ${
-        isDark ? "border-[#1a1a1a] bg-[#0f0f0f]" : "border-gray-200 bg-white"
-      }`}>
+    <div className={`border-t flex flex-col h-64 bg-surface-page border-line`}>
+      <div className={`flex items-center justify-between px-4 border-b border-line bg-surface-panel`}>
         <div className="flex items-center gap-6">
           <button
             onClick={() => setActiveTab("terminal")}
             className={`text-xs tracking-wide py-2.5 border-b-2 transition-colors ${
               activeTab === "terminal"
-                ? `${isDark ? "text-white" : "text-gray-900"} border-blue-500`
-                : `${isDark ? "text-gray-500 hover:text-gray-300" : "text-gray-500 hover:text-gray-700"} border-transparent`
+                ? `text-primary border-accent`
+                : `text-muted hover:text-primary border-transparent`
             }`}
           >
             TERMINAL
@@ -166,13 +204,13 @@ const BottomPanel = forwardRef(function BottomPanel({
             onClick={() => setActiveTab("problems")}
             className={`text-xs tracking-wide py-2.5 border-b-2 transition-colors flex items-center gap-2 ${
               activeTab === "problems"
-                ? `${isDark ? "text-white" : "text-gray-900"} border-blue-500`
-                : `${isDark ? "text-gray-500 hover:text-gray-300" : "text-gray-500 hover:text-gray-700"} border-transparent`
+                ? `text-primary border-accent`
+                : `text-muted hover:text-primary border-transparent`
             }`}
           >
             PROBLEMS
             {problems.length > 0 && (
-              <span className="bg-red-500/20 text-red-400 text-[10px] px-1.5 rounded-full">
+              <span className="bg-danger/20 text-danger text-[10px] px-1.5 rounded-full">
                 {problems.length}
               </span>
             )}
@@ -184,7 +222,7 @@ const BottomPanel = forwardRef(function BottomPanel({
             <button
               onClick={handleKill}
               title="Stop"
-              className="flex items-center gap-1 px-2 py-1 text-xs text-red-400 hover:text-red-300 rounded"
+              className="flex items-center gap-1 px-2 py-1 text-xs text-danger hover:text-danger rounded"
             >
               <Square size={12} /> Stop
             </button>
@@ -192,11 +230,7 @@ const BottomPanel = forwardRef(function BottomPanel({
           <button
             onClick={handleClear}
             title="Clear"
-            className={`p-1.5 rounded transition-colors ${
-              isDark
-                ? "text-gray-500 hover:text-white hover:bg-[#1a1a1a]"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-            }`}
+            className={`p-1.5 rounded transition-colors text-muted hover:text-primary hover:bg-surface-raised`}
           >
             <RefreshCw size={14} />
           </button>
@@ -213,21 +247,19 @@ const BottomPanel = forwardRef(function BottomPanel({
         {activeTab === "problems" && (
           <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-4">
             {problems.length === 0 ? (
-              <div className={`flex flex-col items-center justify-center h-full gap-2 ${isDark ? "text-gray-500" : "text-gray-500"}`}>
-                <div className="text-green-500/20"><AlertCircle size={40} /></div>
+              <div className={`flex flex-col items-center justify-center h-full gap-2 text-muted`}>
+                <div className="text-ok/20"><AlertCircle size={40} /></div>
                 <p>No problems detected.</p>
               </div>
             ) : (
               problems.map((p, idx) => (
-                <div key={idx} className={`flex gap-3 p-3 border border-red-500/20 rounded-md mb-2 cursor-pointer group ${
-                  isDark ? "bg-[#1a1a1a]/50 hover:bg-[#1a1a1a]" : "bg-red-50/50 hover:bg-red-50"
-                }`}>
-                  <XCircle className="text-red-500 mt-0.5 shrink-0" size={16} />
+                <div key={idx} className={`flex gap-3 p-3 border border-danger/20 rounded-md mb-2 cursor-pointer group bg-surface-raised/50 hover:bg-surface-raised`}>
+                  <XCircle className="text-danger mt-0.5 shrink-0" size={16} />
                   <div>
-                    <div className={`font-medium text-sm ${isDark ? "text-gray-200" : "text-gray-800"}`}>
+                    <div className={`font-medium text-sm text-primary`}>
                       {p.message}
                     </div>
-                    <div className={`text-xs mt-1 ${isDark ? "text-gray-500 group-hover:text-gray-400" : "text-gray-500 group-hover:text-gray-600"}`}>
+                    <div className={`text-xs mt-1 text-muted group-hover:text-dim`}>
                       {files?.[p.file]?.name || "Unknown File"} • Line {p.line}
                     </div>
                   </div>
@@ -241,8 +273,8 @@ const BottomPanel = forwardRef(function BottomPanel({
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: ${isDark ? "#2a2a2a" : "#d1d5db"}; border: 3px solid ${isDark ? "#0a0a0a" : "#f9fafb"}; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: ${isDark ? "#3a3a3a" : "#9ca3af"}; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--line-strong); border: 3px solid var(--surface-page); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
       `}</style>
     </div>
   );

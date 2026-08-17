@@ -2,44 +2,68 @@
 	box-sizing: border-box;
 }
 
-/* Theme CSS Variables */
+/* ---------------------------------------------------------------------------
+   Semantic theme tokens.
+
+   Light is the landing page's paper palette; dark is its product panel — the
+   terminal. Components never name a colour: they use the semantic utility
+   (bg-surface-panel, text-dim) and it flips here. App.css re-exports these to
+   Tailwind via `@theme inline`, which is what keeps one class covering both
+   themes instead of needing a `dark:` twin on every element.
+   --------------------------------------------------------------------------- */
 :root {
-	/* Light theme colors */
-	--bg-primary: #ffffff;
-	--bg-secondary: #f5f5f5;
-	--bg-tertiary: #e5e5e5;
-	--bg-hover: #ebebeb;
-	--border-color: #d4d4d4;
-	--border-hover: #a3a3a3;
-	--text-primary: #171717;
-	--text-secondary: #525252;
-	--text-muted: #737373;
-	--text-placeholder: #a3a3a3;
-	--accent-color: #3b82f6;
-	--accent-hover: #2563eb;
+	color-scheme: light;
+
+	--surface-page: #efefea;
+	--surface-panel: #f6f6f2;
+	--surface-raised: #e3e4dc;
+	--surface-hover: #dcddd4;
+
+	--line: rgba(23, 26, 23, 0.1);
+	--line-strong: rgba(23, 26, 23, 0.2);
+
+	--text-primary: #171a17;
+	--text-dim: #5b615a;
+	--text-muted: #8a8f88;
+
+	--accent: #2b4bf0;
+	--accent-on: #ffffff;
+	--accent-fg: #2b4bf0;
+
+	--ok: #2f6b45;
+	--danger: #a63a33;
 }
 
 :root.dark {
-	/* Dark theme colors */
-	--bg-primary: #0a0a0a;
-	--bg-secondary: #0f0f0f;
-	--bg-tertiary: #1a1a1a;
-	--bg-hover: #2a2a2a;
-	--border-color: #1a1a1a;
-	--border-hover: #2a2a2a;
-	--text-primary: #ffffff;
-	--text-secondary: #e5e5e5;
-	--text-muted: #737373;
-	--text-placeholder: #525252;
-	--accent-color: #3b82f6;
-	--accent-hover: #2563eb;
+	color-scheme: dark;
+
+	--surface-page: #0c0f0c;
+	--surface-panel: #101310;
+	--surface-raised: #161a16;
+	--surface-hover: #1c211c;
+
+	--line: rgba(255, 255, 255, 0.08);
+	--line-strong: rgba(255, 255, 255, 0.16);
+
+	--text-primary: #c9cfc9;
+	--text-dim: #8b938b;
+	--text-muted: #5e665e;
+
+	--accent: #2b4bf0;
+	--accent-on: #ffffff;
+	/* Blue-as-text is only 2.2:1 on the terminal surface. Icons and links use
+	   the lighter tint the landing panel already uses for Codio AI. */
+	--accent-fg: #8fa7f5;
+
+	--ok: #5e9e6e;
+	--danger: #e2716a;
 }
 
 body {
 	margin: 0;
-	background: var(--bg-primary);
-	color: var(--text-secondary);
-	font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	background: var(--surface-page);
+	color: var(--text-primary);
+	font-family: "Instrument Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	-webkit-font-smoothing: antialiased;
 	transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -66,14 +90,3 @@ body:has(.landing-root) {
 	height: auto;
 	min-height: 100vh;
 }
-
-/* Theme utility classes */
-.theme-bg-primary { background-color: var(--bg-primary); }
-.theme-bg-secondary { background-color: var(--bg-secondary); }
-.theme-bg-tertiary { background-color: var(--bg-tertiary); }
-.theme-bg-hover { background-color: var(--bg-hover); }
-.theme-border { border-color: var(--border-color); }
-.theme-text-primary { color: var(--text-primary); }
-.theme-text-secondary { color: var(--text-secondary); }
-.theme-text-muted { color: var(--text-muted); }
-

@@ -1,7 +1,14 @@
 @import "tailwindcss";
 
+/* Tailwind v4 keys `dark:` off prefers-color-scheme by default, but the app's
+   theme is a class on <html> set by ThemeContext. Without this, `dark:` never
+   tracked the user's choice — which is why the app was written with hundreds
+   of hand-rolled `isDark ? … : …` ternaries. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  /* --- Landing palette: bone paper, ink, editor-caret accents --- */
+  /* --- Landing palette: bone paper, ink, editor-caret accents.
+         The marketing page renders off these. Do not repoint them. --- */
   --color-paper: #efefea;
   --color-linen: #e3e4dc;
   --color-card: #f6f6f2;
@@ -15,15 +22,41 @@
   --font-display: "Fraunces", Georgia, "Times New Roman", serif;
   --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
-  --font-montserrat: "Montserrat", sans-serif;
 
-  /* --- Radii --- */
+  /* --- Radii. The landing keeps its soft corners; the app is tighter,
+         because a terminal has sharper ones. --- */
   --radius-btn: 9px;
   --radius-card: 18px;
   --radius-panel: 22px;
+  --radius-field: 7px;
+  --radius-surface: 12px;
 
   /* --- The eyebrow caret: a text cursor, blinking on a real cursor's cadence --- */
   --animate-caret: codio-blink 1.4s steps(1) infinite;
+}
+
+/* Semantic surfaces, defined in index.css on :root and :root.dark. `inline`
+   keeps the var live in the utility instead of freezing its value at build
+   time, so `bg-surface-panel` alone covers both themes. */
+@theme inline {
+  --color-surface-page: var(--surface-page);
+  --color-surface-panel: var(--surface-panel);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-primary: var(--text-primary);
+  --color-dim: var(--text-dim);
+  --color-muted: var(--text-muted);
+
+  --color-accent: var(--accent);
+  --color-accent-on: var(--accent-on);
+  --color-accent-fg: var(--accent-fg);
+
+  --color-ok: var(--ok);
+  --color-danger: var(--danger);
 }
 
 @keyframes codio-blink {

@@ -50,12 +50,12 @@ export default function ForgotPassword() {
     >
       {/* Toggle Link */}
       <div className="text-center mb-6">
-        <p className="text-gray-400">
+        <p className="text-dim">
           Remember your password?{" "}
           <button
             type="button"
             onClick={() => navigate('/login')}
-            className="text-white hover:text-cyan-400 font-medium underline underline-offset-2 transition-colors"
+            className="text-primary hover:text-accent-fg font-medium underline underline-offset-2 transition-colors"
           >
             Sign in
           </button>

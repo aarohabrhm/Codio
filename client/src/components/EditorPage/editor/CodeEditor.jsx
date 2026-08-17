@@ -86,45 +86,89 @@ const CodeEditor = forwardRef(
     }));
 
     const handleBeforeMount = (monaco) => {
+      // Near-monochrome syntax, matching the landing page's product panel:
+      // one blue-family tint carries functions, everything else is a step on
+      // the grey ramp. The gutter, widgets and minimap are declared too —
+      // left unset they fall back to stock VS Code grey, which reads as a
+      // foreign panel dropped into the terminal surface.
       monaco.editor.defineTheme("codio-dark", {
         base: "vs-dark",
         inherit: true,
         rules: [
-          { token: "comment", foreground: "6a9955" },
-          { token: "keyword", foreground: "569cd6" },
-          { token: "string", foreground: "ce9178" },
-          { token: "number", foreground: "b5cea8" },
-          { token: "function", foreground: "dcdcaa" },
+          { token: "", foreground: "c9cfc9" },
+          { token: "comment", foreground: "5e665e", fontStyle: "italic" },
+          { token: "keyword", foreground: "efefea" },
+          { token: "string", foreground: "a8b0a8" },
+          { token: "number", foreground: "a8b0a8" },
+          { token: "function", foreground: "8fa7f5" },
+          { token: "type", foreground: "8fa7f5" },
+          { token: "variable", foreground: "c9cfc9" },
+          { token: "operator", foreground: "6e766e" },
+          { token: "delimiter", foreground: "6e766e" },
         ],
         colors: {
-          "editor.background": "#0a0a0a",
-          "editor.foreground": "#d4d4d4",
-          "editorCursor.foreground": "#22d3ee",
-          "editor.selectionBackground": "#264f78",
-          "editorLineNumber.foreground": "#4a4a4a",
-          "editorLineNumber.activeForeground": "#c0c0c0",
-          "scrollbarSlider.background": "#2a2a2a55",
+          "editor.background": "#0c0f0c",
+          "editor.foreground": "#c9cfc9",
+          "editorCursor.foreground": "#8fa7f5",
+          "editor.selectionBackground": "#2b4bf055",
+          "editor.lineHighlightBackground": "#101310",
+          "editor.lineHighlightBorder": "#00000000",
+          "editorLineNumber.foreground": "#3d453d",
+          "editorLineNumber.activeForeground": "#8b938b",
+          "editorGutter.background": "#0c0f0c",
+          "editorIndentGuide.background1": "#1c211c",
+          "editorIndentGuide.activeBackground1": "#2b4bf066",
+          "editorWidget.background": "#101310",
+          "editorWidget.border": "#ffffff14",
+          "editorSuggestWidget.background": "#101310",
+          "editorSuggestWidget.selectedBackground": "#1c211c",
+          "editorHoverWidget.background": "#101310",
+          "minimap.background": "#0c0f0c",
+          "scrollbarSlider.background": "#ffffff14",
+          "scrollbarSlider.hoverBackground": "#ffffff24",
+          "editorBracketMatch.background": "#2b4bf033",
+          "editorBracketMatch.border": "#2b4bf0",
         },
       });
 
+      // The paper counterpart, on the landing page's light palette.
       monaco.editor.defineTheme("codio-light", {
         base: "vs",
         inherit: true,
         rules: [
-          { token: "comment", foreground: "008000" },
-          { token: "keyword", foreground: "0000ff" },
-          { token: "string", foreground: "a31515" },
-          { token: "number", foreground: "098658" },
-          { token: "function", foreground: "795e26" },
+          { token: "", foreground: "171a17" },
+          { token: "comment", foreground: "8a8f88", fontStyle: "italic" },
+          { token: "keyword", foreground: "171a17" },
+          { token: "string", foreground: "5b615a" },
+          { token: "number", foreground: "5b615a" },
+          { token: "function", foreground: "2b4bf0" },
+          { token: "type", foreground: "2b4bf0" },
+          { token: "variable", foreground: "171a17" },
+          { token: "operator", foreground: "8a8f88" },
+          { token: "delimiter", foreground: "8a8f88" },
         ],
         colors: {
-          "editor.background": "#ffffff",
-          "editor.foreground": "#1f1f1f",
-          "editorCursor.foreground": "#0891b2",
-          "editor.selectionBackground": "#add6ff",
-          "editorLineNumber.foreground": "#6e7681",
-          "editorLineNumber.activeForeground": "#1f1f1f",
-          "scrollbarSlider.background": "#d1d5db55",
+          "editor.background": "#efefea",
+          "editor.foreground": "#171a17",
+          "editorCursor.foreground": "#2b4bf0",
+          "editor.selectionBackground": "#2b4bf033",
+          "editor.lineHighlightBackground": "#e3e4dc66",
+          "editor.lineHighlightBorder": "#00000000",
+          "editorLineNumber.foreground": "#b0b4ac",
+          "editorLineNumber.activeForeground": "#5b615a",
+          "editorGutter.background": "#efefea",
+          "editorIndentGuide.background1": "#dcddd4",
+          "editorIndentGuide.activeBackground1": "#2b4bf055",
+          "editorWidget.background": "#f6f6f2",
+          "editorWidget.border": "#171a1720",
+          "editorSuggestWidget.background": "#f6f6f2",
+          "editorSuggestWidget.selectedBackground": "#e3e4dc",
+          "editorHoverWidget.background": "#f6f6f2",
+          "minimap.background": "#efefea",
+          "scrollbarSlider.background": "#171a1720",
+          "scrollbarSlider.hoverBackground": "#171a1733",
+          "editorBracketMatch.background": "#2b4bf022",
+          "editorBracketMatch.border": "#2b4bf0",
         },
       });
     };
@@ -203,7 +247,7 @@ const CodeEditor = forwardRef(
 
     if (!file) {
       return (
-        <div className={`h-full w-full flex items-center justify-center text-sm ${isDark ? "text-gray-500" : "text-gray-500"}`}>
+        <div className={`h-full w-full flex items-center justify-center text-sm text-muted`}>
           Select a file to start editing
         </div>
       );
@@ -220,6 +264,13 @@ const CodeEditor = forwardRef(
         theme={isDark ? "codio-dark" : "codio-light"}
         options={{
           fontSize: 13,
+          // CursorOverlay measures the advance width off the rendered font, so
+          // changing this no longer drifts remote collaborators' carets.
+          fontFamily: '"JetBrains Mono", ui-monospace, "SFMono-Regular", monospace',
+          fontLigatures: true,
+          lineHeight: 22,
+          padding: { top: 14, bottom: 14 },
+          renderLineHighlight: "all",
           minimap: { enabled: true },
           automaticLayout: true,
           wordWrap: "on",
