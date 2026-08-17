@@ -15,9 +15,7 @@ import {
 import { PANEL } from "../landing/panelTokens";
 import { STEP, TOTAL_CHARS } from "../landing/useHeroSequence";
 
-// The showcase side is the landing page's product panel, held at its final
-// frame. Same components, no timers — a login screen shouldn't run an
-// eight-second animation while someone is typing a password.
+
 function RestingPanel() {
   return (
     <div
