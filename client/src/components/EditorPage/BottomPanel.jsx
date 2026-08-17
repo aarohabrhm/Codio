@@ -5,6 +5,59 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 
+// All sixteen ANSI slots, tuned to the terminal surface. The eight bright
+// slots used to be unset even though the app emits \x1b[90m, so bright-black
+// fell through to an xterm default that didn't match either theme.
+function terminalTheme(isDark) {
+  return isDark
+    ? {
+        background: "#0c0f0c",
+        foreground: "#c9cfc9",
+        cursor: "#8fa7f5",
+        cursorAccent: "#0c0f0c",
+        selectionBackground: "#2b4bf055",
+        black: "#0c0f0c",
+        red: "#e2716a",
+        green: "#5e9e6e",
+        yellow: "#e9a227",
+        blue: "#8fa7f5",
+        magenta: "#d2506c",
+        cyan: "#7fb3ae",
+        white: "#c9cfc9",
+        brightBlack: "#5e665e",
+        brightRed: "#ef8a83",
+        brightGreen: "#77b586",
+        brightYellow: "#f2b950",
+        brightBlue: "#a9bcf8",
+        brightMagenta: "#e07a90",
+        brightCyan: "#9ac7c2",
+        brightWhite: "#efefea",
+      }
+    : {
+        background: "#efefea",
+        foreground: "#171a17",
+        cursor: "#2b4bf0",
+        cursorAccent: "#efefea",
+        selectionBackground: "#2b4bf033",
+        black: "#171a17",
+        red: "#a63a33",
+        green: "#2f6b45",
+        yellow: "#8a6014",
+        blue: "#2b4bf0",
+        magenta: "#9c3350",
+        cyan: "#2f6b6b",
+        white: "#5b615a",
+        brightBlack: "#8a8f88",
+        brightRed: "#c04a42",
+        brightGreen: "#3f7f55",
+        brightYellow: "#a5761c",
+        brightBlue: "#4a66f3",
+        brightMagenta: "#b84663",
+        brightCyan: "#3f8585",
+        brightWhite: "#171a17",
+      };
+}
+
 const BottomPanel = forwardRef(function BottomPanel({
   activeTab,
   setActiveTab,
@@ -37,20 +90,11 @@ const BottomPanel = forwardRef(function BottomPanel({
     const term = new Terminal({
       cursorBlink: true,
       fontSize: 13,
-      fontFamily: '"Cascadia Code", "Fira Code", monospace',
-      theme: {
-        background: isDark ? "#0a0a0a" : "#ffffff",
-        foreground: isDark ? "#d4d4d4" : "#1a1a1a",
-        cursor:     isDark ? "#ffffff" : "#000000",
-        black:      "#000000",
-        red:        "#cd3131",
-        green:      "#0dbc79",
-        yellow:     "#e5e510",
-        blue:       "#2472c8",
-        magenta:    "#bc3fbc",
-        cyan:       "#11a8cd",
-        white:      "#e5e5e5",
-      },
+      // Cascadia and Fira were never loaded, so this silently rendered in a
+      // generic monospace. JetBrains Mono is the one the app actually ships.
+      fontFamily: '"JetBrains Mono", ui-monospace, "SFMono-Regular", monospace',
+      lineHeight: 1.4,
+      theme: terminalTheme(isDark),
       allowTransparency: true,
       convertEol: true,
     });
@@ -81,11 +125,9 @@ const BottomPanel = forwardRef(function BottomPanel({
 
   useEffect(() => {
     if (!xtermRef.current) return;
-    xtermRef.current.options.theme = {
-      background: isDark ? "#0a0a0a" : "#ffffff",
-      foreground: isDark ? "#d4d4d4" : "#1a1a1a",
-      cursor:     isDark ? "#ffffff" : "#000000",
-    };
+    // Assigning the whole object matters: patching only three keys used to
+    // drop the entire ANSI palette on the first light/dark toggle.
+    xtermRef.current.options.theme = terminalTheme(isDark);
   }, [isDark]);
 
   useEffect(() => {
@@ -231,8 +273,8 @@ const BottomPanel = forwardRef(function BottomPanel({
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: ${isDark ? "#2a2a2a" : "#d1d5db"}; border: 3px solid ${isDark ? "#0a0a0a" : "#f9fafb"}; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: ${isDark ? "#3a3a3a" : "#9ca3af"}; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--line-strong); border: 3px solid var(--surface-page); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
       `}</style>
     </div>
   );
